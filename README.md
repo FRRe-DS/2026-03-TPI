@@ -24,3 +24,4 @@ M3, M5, mapas
 * **Control de Versiones:** Git & GitHub
 
 Claver Gallino Samira
+Acevedo Gomez Amparo
