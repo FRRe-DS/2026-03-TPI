@@ -5,7 +5,7 @@ Plataforma distribuida de movilidad urbana bajo demanda
 ## 🚀 Integrantes - Grupo 03
 Completar ....
 
-* **Carrera:** Desarrollo de Software
+* **Carrera:** Ingenieria en Sistemas
 * **Materia:** Desarrollo de Software 2026
 
 ## Modulo asignado:
