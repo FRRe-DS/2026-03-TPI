@@ -3,7 +3,10 @@
 Plataforma distribuida de movilidad urbana bajo demanda
 
 ## 🚀 Integrantes - Grupo 03
-Completar ....
+
+* Acevedo Gomez, Amparo
+* Claver Gallino, Samira
+* Echeverria Melgratti, Lautaro
 
 * **Carrera:** Ingenieria en Sistemas
 * **Materia:** Desarrollo de Software 2026
@@ -22,7 +25,3 @@ M3, M5, mapas
 * **Lenguaje:** Python ...(completar version)
 * **Framework:** .... (completar)
 * **Control de Versiones:** Git & GitHub
-
-Claver Gallino Samira
-
-Acevedo Gomez Amparo
