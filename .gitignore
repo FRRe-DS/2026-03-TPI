@@ -3,3 +3,9 @@ venv
 env
 entorno
 ventorno
+/env
+./env/
+./env
+env/
+venv/
+ENV/
