@@ -8,6 +8,7 @@ Plataforma distribuida de movilidad urbana bajo demanda
 * Claver Gallino, Samira
 * Echeverria Melgratti, Lautaro
 * Gonzalez, Micaela
+* Sanchez, Abigail
 
 * **Carrera:** Ingenieria en Sistemas
 * **Materia:** Desarrollo de Software 2026
