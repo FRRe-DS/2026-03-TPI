@@ -4,11 +4,12 @@ Plataforma distribuida de movilidad urbana bajo demanda
 
 ## 🚀 Integrantes - Grupo 03
 
-* Acevedo Gomez, Amparo
-* Claver Gallino, Samira
-* Echeverria Melgratti, Lautaro
-* Gonzalez, Micaela
-* Sanchez, Abigail
+* Acevedo Gomez, Amparo.
+* Claver Gallino, Samira.
+* Echeverria Melgratti, Lautaro.
+* Gonzalez, Micaela.
+* Sanchez, Abigail.
+* Franco Quiroz, Facundo Agustin.
 
 * **Carrera:** Ingenieria en Sistemas
 * **Materia:** Desarrollo de Software 2026
