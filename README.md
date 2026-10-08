@@ -10,7 +10,7 @@ Plataforma distribuida de movilidad urbana bajo demanda
 * Gonzalez, Micaela.
 * Sanchez, Abigail.
 * Franco Quiroz, Facundo Agustin.
-* Rocio V. Ramirez
+* Rocio V. Ramirez.
 
 * **Carrera:** Ingenieria en Sistemas
 * **Materia:** Desarrollo de Software 2026
