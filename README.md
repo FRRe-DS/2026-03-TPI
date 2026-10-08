@@ -2,7 +2,7 @@
 
 Plataforma distribuida de movilidad urbana bajo demanda
 
-## 🚀 Integrantes - Grupo 03
+## 🚀 Integrantes - Grupo 03 -
 
 * Acevedo Gomez, Amparo.
 * Claver Gallino, Samira.
