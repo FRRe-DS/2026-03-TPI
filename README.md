@@ -1,6 +1,6 @@
 # # Sistema de Gestión de Logística y Viajes (TPI 2026)
 
-Plataforma distribuida de movilidad urbana bajo demanda
+Plataforma distribuida de movilidad urbana bajo demanda.
 
 ## 🚀 Integrantes - Grupo 03 -
 
