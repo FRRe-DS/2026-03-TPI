@@ -10,7 +10,7 @@ app = FastAPI(
 
 # Endpoint raíz para verificar que la API está viva
 @app.get("/") #si viene "/" en el navegador, le aplicara app.get y el codigo debajo
-def read_root():
+def read_Home():
     return {
         "estado": "activo",
         "mensaje": "M4 corriendo correctamente en Docker"
