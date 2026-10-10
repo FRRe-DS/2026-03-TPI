@@ -27,6 +27,8 @@ services: # palabra reservada que indica que todo lo de abajo identado dentro de
       - "8000:8000"
     depends_on: #orden de encendido/despleigue, si existiera varias db y tienen significados especificos, deben ser secuenciales
       - m4db #debe ser igual al de la linea 6, es decir, el nombre del servicio de la db, no el nombre del contenedor
+    volumes:
+      - ./app:/tpim4/app #volumen que conecta el disco con el contenedor, es decir, si modificamos el codigo fuente en el disco, se vera reflejado en el contenedor
     env_file:
       - .env
     environment:

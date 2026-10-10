@@ -24,7 +24,10 @@ COPY ./app /tpim4/app
 
 # Iniciar Uvicorn usando la forma "exec" oficial, el cual se interpreta que "prende el servidor" y lo 
 #deja corriendo en el contenedor, escuchando en el puerto 8000, aceptando cualquier host, que le inyectaremos luego
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 #el segundo parametro, menciona que le pasamos el archivo main que se encuentra en app, y le diremos que reciba app, cual 
 #es el nombre de la variable que contiene la instancia de fastapi, que es la que se va a ejecutar 
 #y que es la que contiene todas las rutas de la api
+
+#el ultimo parametro es para que actualize el codigo fuente en caliente
+#contrario se debera armar el contenedor cada vez que se modifique el codigo fuente, lo cual es muy engorroso
