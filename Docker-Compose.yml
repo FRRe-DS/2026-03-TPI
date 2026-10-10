@@ -1,0 +1,37 @@
+version: '3.8' #version compilable de docker
+
+services: # palabra reservada que indica que todo lo de abajo identado dentro de service, es parte del contenedor
+  #m4db es el nombre del dns que se observara dentro del contenedor, es decir, si dentro del contenedor api, 
+  #se quiere hacer un ping a la base de datos, se debe hacer ping m4db
+  m4db:
+    image: postgres:15-alpine #imagen de postgres que necesitamos para generar la db
+    container_name: m4db #nombre visual que tendra dentro de la terminal, es decir, si hacemos docker ps, 
+                          #veremos que el contenedor se llama m4db
+    env_file: #le decimos e indicamos donde estan los datos de entorno, en este caso en el archivo .env
+      - .env # directorio actual de docker compose, busca el archivo .env y lo inyecta en el contenedor, es decir, lo hace disponible para que postgres lo use
+    environment: #inyeccion de datos de entorno, la parte izquierda es no negociable, son propias del postgres
+                  #la parte derecha es la que nosotros definimos en el archivo .env, y que luego docker-compose inyectara
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    ports: #puertos de acceso compatibles con la version de db
+      - "5432:5432"
+    volumes: #conecta disco con contenedor, si necesito comunicarme buscara la analogia disco:conenedor, esta oculta y no la vemos
+      - m4db:/var/lib/postgresql/data
+
+  api: #es el nombre del servicio que se despliega, es mas facil que quede predeterminado
+    build: . # le dice donde tiene que buscar el dockerfile, en este caso en el directorio actual
+    container_name: fastapi_m4 #nombre visual que tendra dentro de la terminal, es decir, si hacemos docker ps, 
+                              #veremos que el contenedor se llama fastapi_m4
+    ports: #puertos de acceso compatibles con la version de api, izquierda personalizable, derecha no
+      - "8000:8000"
+    depends_on: #orden de encendido/despleigue, si existiera varias db y tienen significados especificos, deben ser secuenciales
+      - m4db #debe ser igual al de la linea 6, es decir, el nombre del servicio de la db, no el nombre del contenedor
+    env_file:
+      - .env
+    environment:
+      # Esta es la ruta estándar que funcionará en la PC de todos
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASS}@m4db:5432/${DB_NAME}
+
+volumes: #declaracion de volumenes, es decir, donde se guardara la informacion de la base de datos, para que no se pierda al apagar el contenedor
+  m4db: #nombre del volumen que se crea, es el que se ve en la terminal, es el que se ve en docker volume ls
