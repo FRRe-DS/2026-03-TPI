@@ -1,8 +1,8 @@
 # # Sistema de Gestión de Logística y Viajes (TPI 2026)
 
-Plataforma distribuida de movilidad urbana bajo demanda
+Plataforma distribuida de movilidad urbana bajo demanda.
 
-## 🚀 Integrantes - Grupo 03
+## 🚀 Integrantes - Grupo 03 -
 
 * Acevedo Gomez, Amparo.
 * Claver Gallino, Samira.
@@ -10,6 +10,7 @@ Plataforma distribuida de movilidad urbana bajo demanda
 * Gonzalez, Micaela.
 * Sanchez, Abigail.
 * Franco Quiroz, Facundo Agustin.
+* Rocio V. Ramirez.
 
 * **Carrera:** Ingenieria en Sistemas
 * **Materia:** Desarrollo de Software 2026
