@@ -11,6 +11,7 @@ Plataforma distribuida de movilidad urbana bajo demanda.
 * Sanchez, Abigail.
 * Franco Quiroz, Facundo Agustin.
 * Rocio V. Ramirez.
+* Roubineau Ana Laura
 
 * **Carrera:** Ingenieria en Sistemas
 * **Materia:** Desarrollo de Software 2026
