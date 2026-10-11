@@ -1,0 +1,31 @@
+/*
+==============================================
+Este archivo contiene la configuración del contenedor de desarrollo para VS Code.
+Se indica el nombre del contenedor, el archivo docker-compose a utilizar, el servicio al que
+se conectará VS Code, la carpeta de trabajo dentro del contenedor y las extensiones recomendadas.
+Esto es posible si y solo si se tiene instalado el plugin de Dev Containers en VS Code.
+==============================================
+*/
+{
+"name": "M4 Dev container",
+// Le decimos que reutilice nuestro docker-compose ya creado
+"dockerComposeFile": "../docker-compose.yml",
+
+// Indicamos a qué contenedor de los dos debe conectarse VS Code por dentro
+"service": "api",
+
+// La ruta de trabajo dentro del contenedor (debe coincidir con tu WORKDIR del Dockerfile)
+"workspaceFolder": "/tpim4",
+// Extensiones recomendadas que VS Code instalará automáticamente DENTRO del contenedor
+"customizations": {
+    "vscode": {
+    "extensions": 
+    [
+    "ms-python.python",
+    "ms-python.pylance"
+    ]
+}
+},
+// Asegura que el contenedor no se apague al cerrar VS Code
+"shutdownAction": "stopCompose"
+}

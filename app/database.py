@@ -1,3 +1,13 @@
+"""
+===================================================
+Este archivo contiene la configuración de la base de datos y la creación del motor de conexión a Postgres
+así como la definición de la clase Base para declarar las tablas (modelos) y la función get_db() 
+para inyectar dependencias en los endpoints de FastAPI.
+Si fuera necesario, aqui tambien se redefinirian las configuraciones de pool de coneccion como ser la cantidad maxima 
+de conecciones, el tiempo de espera, etc. Sus valores predeterminados nos serviran por el momento
+===================================================
+"""
+
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base

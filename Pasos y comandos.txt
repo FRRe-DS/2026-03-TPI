@@ -1,0 +1,87 @@
+============================================
+Serie de pasos para ejecutar por primera vez docker y con regularidad, asi como dependencias obligatorias
+y situaciones con comandos especificos. OJO SE CONFIGURO EN WINDOWS
+============================================
+-----------Extenciones/pluggins obligatorios de VSC-------------------
+    *docker
+    *dev container
+    *WSL
+======================================================================
+
+======================================================================
+DEBES TENER EL DOCKER DESKTOP ABIERTO PARA CUALQUIER PASO
+
+Tambien se aclara que docker ocupa o monopolizara la ventana de comandos que la invoca/ejecuta,
+por lo que SIN CERRARLA debes abrir otra si quieres seguir ingresando comandos por consola para manipular
+datos del contenedor, por ejemplo migraciones de Alembic.
+
+======================================================================
+
+-----------primera vez o cambios en archivos importantes--------------
+    *archivos importantes = dockerfile, requirements.txt y docker-compose.yml
+    - pasos
+        .abres el terminal vsc donde se encuentra el docker-compose.yml
+        .ejecutas el siguiente comando: docker-compose up --build
+        .esperas a que termine, lleva tiempo.
+        .actualizas la migracion de la BD (si eres el que debe crearla ve mas abajo)
+    - explicacion
+        . realiza la creacion del contenedor, descarga e instalacion de dependencias y por ultimo ejecuta el codigo
+          "BASE" que se configuro en los archivos importantes antes de dejarte el control total sobre el contenedor.
+    
+    -Base de datos
+        -si quieres compartir una base de datos, deberas obligadamente utilizar un gestor de bd o migraciones
+            actualmente usamos Alembic, y se ejecutan los comandos siguientes luego de lo anterior y con el contenedor
+            en su estado activo:
+                docker-compose exec api alembic init alembic
+            esto crea una carpeta en especifica en el directorio con los datos de la bd creada en el contenedor, con
+            todos los datos necesarias para replicarla sin necesidad de "clonar" fisicamente la bd, la cual es pesadisima
+            esta carpeta es la que se sube a git, en caso de no usar docker, pasarias el script no la bd.
+            ACLARACION, docker monopolizara la ventana de comando VSC en cual se ejecutp, por lo tanto debes abrir otra
+            ventana de comandos, SIN CERRAR LA QUE ABRIO DOCKER, si la cierras pierdes el contenedor.
+            en la segunda ventana de comandos ecribiras lo siguiente.
+            
+            docker-compose exec fastapi_m4 alembic init alembic
+
+            eso creara carpetas alembic, y un archivo de configuracion de extencion .ini, los cuales son los scripts 
+            importantes. como notaras, se coloca el nombre del container de la api definida en docker-compose.yml
+            recuerdalo si lo defines de otra manera el nombre del container, actualmente en el docker-compose se realiza
+            la especificacion de que si se crea en el container se cree en el disco tambien, por lo que generamos la 
+            migracion inicial con el siguiente comando
+
+            docker-compose exec api alembic revision --autogenerate -m "MIGRACION INICIAL"
+
+            tambien sirve para cada migracion o "commit" que se realize segun los cambios de nuevas tablas o estructuras
+            de la base de datos generadas a partir de la models.py, es decir, si modificas el models.py debes realizar 
+            una nueva migracion y pushear en git con un mensaje commit descriptivo acerca de ello.
+
+            para realizar un "pull" de migraciones se realiza lo siguiente:
+
+            docker-compose exec api alembic upgrade head
+
+            basicamente su traduccion seria, "traeme la ultima migracion y aplicala a mi disco", de esta manera es 
+            posible replicar la base de datos en cualquier computador a traves de scrips.
+
+=======================================================================
+
+-----------dia a dia---------------------------------------------------
+    - para actualizar dia a dia, no hace falta utilizar --build en el comando, considerando que se configuro para que el
+        codigo fuente sea actualizado al realizar el comando en la consola dejado a continuacion, caso contrario
+        el trabajo sera en vano:  docker-compose up
+    - para "apagar" docker, se realiza el siguiente comando: docker-compose down
+        aunque esta configurado vsc para que cierre el contenedor al salir, es mejor introducir el codigo por las dudas
+
+    - si se confirma que existen migraciones para realizar (pull) segun git, entonces se debe realizar el siguiente comando
+        
+        docker-compose exec api alembic upgrade head
+    
+    - si se debe "pushear" una migracion, se debe realizar el siguiente comando:
+        
+        docker-compose exec api alembic revision --autogenerate -m "<<mensaje>>"
+
+    OJO al cerrar vsc no actualiza el codigo fuente el codigo es imperativo hacerlo para reflejar cambios.
+    tambien, realizar o pushear migraciones, si no se suben al git, quedaran solo en disco, por lo que si se realiza
+    una nueva migracion, se debe actualizar el repositorio remoto OBLIGATORIAMENTE, de esa manera nos aseguramos de que 
+    aquellos que utilizan el repositorio, tienen acceso a la recreacion de la bd.
+
+
+

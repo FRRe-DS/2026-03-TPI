@@ -1,0 +1,97 @@
+NECESITAS WSL 2 PARA LOGRAR crear los contenedores virtuales de manera estable en windows.
+
+
+para la optimizacion de memoria en disco (porque pesa un monton si lo haces predeterminado) 
+abris la POWERSHELL en adm de windows, NO EL CMD, no es lo mismo, la escribis en el buscador del logotipo  windows y sale,
+ y mandas el comando:
+
+wsl --install --no-distribution
+
+eso te instala el wsl "base" sin distribucion linux, el linux se utiliza para emular el entorno 
+basico que necesita docker para crear sus contenedores. HAY QUE REINICIAR LA PC.
+
++--+
+!OJO¡
+si tenes una compu de bajos requerimientos, debes colocar lo siguiente tras instalar el wsl, en la powershell(adm).
+
+Set-Content -Path "C:\Users\$env:USERNAME\.wslconfig" -Value "[wsl2]`nmemory=1GB`nprocessors=1" -Encoding Ascii
+
+
+no tarda nada, tampoco da confirmacion, para asegurar coloca el siguiente comando:
+
+Get-Content "C:\Users\$env:USERNAME\.wslconfig"
+
+Si en la pantalla te aparecen las tres lineas escritas ([wsl2], memory=1GB, processors=1), todo salio bien
+
+esto es en mi disco, se llama C la particion principal, y lo realizo la IA, si tenes diferente nombre de particion
+mucho ojo.
+
+esto lo hacemos para que limite el consumo de ram a 1 gb aproximadamente, asi como el numero de nucleos del procesador
+
+docker es bastante demandante.
+
++--+
+
+luego de reiniciar la computadora, debes ir al siguiente link y descargar el docker desktop:
+https://docs.docker.com/desktop/setup/install/windows-install/
+al abrir el instalador chequear que la primera opcion deba estar marcada, la que mencione WSL y no multiples usuarios y le das a continuar.
+aclaro a mi me aparecio como primera opcion y esta marcada predeterminadamente "per user".
+luego de instalarlo te pedira registro, podes entrar con una cuenta docker o con git.
+
+a partir de aqui puede pasa que salga un error de virtual enviroment, y su causa es que debes entrar en la BIOS de tu
+placa madre, settings y buscar configuracion de virtualizacion o similar, y marcarla como activada, acto seguido guardas
+y prosigues con los pasos, da el LOG de error asi que si quieres pasos mas especificos segun modelo de computador
+mandar la cadena de texto del log de errores a la IA para mejor explicacion.
+
+una vez terminado la instalacion volvemos a la powershell para poder ingresar 2 comandos especificos, que permiten que 
+la memoria en disco no se nos acabe al instalar varias imagenes en docker, ya que docker no libera esta memoria por mas 
+que desinstalemos sus imagenes, el programa retiene espacio en disco inesesariamente.
+
+primero cerramos definitivamente docker, asegurandose que no quede el proceso "oculto", para asegurar tambien colocamos
+el siguiente comando en la powershell:
+
+wsl --shutdown
+
+luego de eso colocamos el siguiente comando:
+
+wsl --manage docker-desktop --set-sparse true --allow-unsafe
+
+a partir de aqui obligadamente debes iniciar el "hellow-world" de docker, ya que la parte "data" que te "come" espacio
+en disco se crea al obtener/descargar una imagen de docker, por ello forzamos su descarga con hellow world con el
+siguiente comando en la powershell:
+
+wsl -l -v
+
+si aparece solo "docker-desktop" entonces debemos hacer hellow world con el siguinte comando, con docker activado/abierto
+
+docker run hello-world
+
+este proceso tarda un poco, y primero te aparecera que no existe la imagen hellow world y lo descargara en segundo plano
+una vez terminado aparecera confirmacion en powershell, y debes salir de docker y ejecutar de nuevo:
+
+wsl --shutdown
+
+seguido de:
+
+wsl -l -v
+
+si sigue apareciendo docker-desktop solamente y no docker-desktop-data, entonces no debes hacer nada, contrario coloca:
+
+wsl --manage docker-desktop-data --set-sparse true --allow-unsafe
+
+si da error de todas formas, esto implicara que windows no le sera posible recuperar el 100% del espacio ocupado por
+las imagenes descargadas por docker, solo cuando se realiza la desintalacion completa del wsl y docker se podra recuperar
+totalmente el espacio en disco que roba el linux de docker y docker mismo.
+actualmente esta configuracion pesa menos de 2 GB entre docker y wsl, hay que sumarle las imagenes que necesitaremos.
+
++--+
+
+para configuraciones del VSC necesitas las siguientes extenciones que descargas desde VSC mismo:
+-WSL
+-DOCKER
+-Dev Containers
+
+todas son creaciones de Microsoft y verificadas, para poder reconocerlas mas rapido este es un factor determinante, tambien
+son las mas descargadas.
+
+
