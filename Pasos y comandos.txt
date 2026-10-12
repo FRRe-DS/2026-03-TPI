@@ -66,17 +66,37 @@ datos del contenedor, por ejemplo migraciones de Alembic.
 -----------dia a dia---------------------------------------------------
     - para actualizar dia a dia, no hace falta utilizar --build en el comando, considerando que se configuro para que el
         codigo fuente sea actualizado al realizar el comando en la consola dejado a continuacion, caso contrario
-        el trabajo sera en vano:  docker-compose up
-    - para "apagar" docker, se realiza el siguiente comando: docker-compose down
+        el trabajo sera en vano:  
+
+            docker-compose up
+
+        ESTO PRENDE EL DOCKER, Y SUS CONTENEDORES. 
+
+    - para "apagar" docker, se realiza el siguiente comando: 
+        
+        docker-compose down
+
         aunque esta configurado vsc para que cierre el contenedor al salir, es mejor introducir el codigo por las dudas
 
-    - si se confirma que existen migraciones para realizar (pull) segun git, entonces se debe realizar el siguiente comando
+    - para controlar y comprobar si existen cambios de migraciones de la base de datos LUEGO DE REALIZAR UN GIT PULL
+        se debe introducir primero el comando CON DOCKER CORRIENDO/ENCENDIDO EN EL CONTENEDOR:
+
+        docker compose exec api alembic current
+
+        esto dara el nombre de la actual migracion/version en la que esta parada tu BD, recuerda ese nombre,
+        ahora ejecuta el siguiente codigo:
+
+        docker compose exec api alembic heads
+
+        esta traera el nombre de la ULTIMA MIGRACION, es decir LA MAS ACTUALIZADA, por lo que deberas realizar la 
+        actualizacion de la base de datos, es decir un pull de bd, o "migrar" a la nueva version.
+        si se confirma que existen migraciones para realizar (pull) segun git, entonces se debe realizar el siguiente comando
         
         docker-compose exec api alembic upgrade head
     
     - si se debe "pushear" una migracion, se debe realizar el siguiente comando:
         
-        docker-compose exec api alembic revision --autogenerate -m "<<mensaje>>"
+        docker-compose exec api alembic revision --autogenerate -m "<<nombre de migracion>>"
 
     OJO al cerrar vsc no actualiza el codigo fuente el codigo es imperativo hacerlo para reflejar cambios.
     tambien, realizar o pushear migraciones, si no se suben al git, quedaran solo en disco, por lo que si se realiza
