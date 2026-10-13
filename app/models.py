@@ -11,15 +11,15 @@ from sqlalchemy.dialects.postgresql import UUID #restricciones de tipo mas compl
 from datetime import datetime, timezone#tipo de datos en formato de fecha y hora
 from .database import Base #importante para crear desde 0 la tabla
 
-'''class Prueba(Base): #todo lo que herede Base, sera una tabla en la base de datos.
+'''
+    class Prueba(Base): #todo lo que herede Base, sera una tabla en la base de datos.
     __tablename__ = "Prueba"
     #esta clase y tabla sera borrada luego de inicializar tipos mas especificos de entidades, ya que esta clase es solo para inicializar la bd
     id = Column(UUID(as_uuid=True), primary_key=True, index=True,default=uuid.uuid4, unique=True, nullable=False)
-    #restricciones de integridad de la tabla, para que no se repitan los valores y que no sean nulos.'''
+    #restricciones de integridad de la tabla, para que no se repitan los valores y que no sean nulos.
+'''
     
 # Tablas
-
-
 
 #Tabla n° 1: Registro de solicitudes de unicacion conductor
 class RegistroSolicitud(Base):

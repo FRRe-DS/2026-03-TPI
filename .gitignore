@@ -11,8 +11,5 @@ venv/
 ENV/
 entorno/
 __pycache__/
-<<<<<<< HEAD
 *.pyc
 desktop.ini
-=======
->>>>>>> 28c2ca5 (cambios pycache)
