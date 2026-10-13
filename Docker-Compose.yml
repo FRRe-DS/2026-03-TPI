@@ -31,6 +31,7 @@ services: # palabra reservada que indica que todo lo de abajo identado dentro de
       - ./app:/tpim4/app #volumen que conecta el disco con el contenedor, es decir, si modificamos el codigo fuente en el disco, se vera reflejado en el contenedor
       - ./alembic:/tpim4/alembic            # Sincroniza la carpeta alembic para migraciones
       - ./alembic.ini:/tpim4/alembic.ini    # Sincroniza el archivo de configuración
+      - ./tests:/tpim4/tests #sincroniza la carpeta de pruebas
     env_file:
       - .env
     environment:
