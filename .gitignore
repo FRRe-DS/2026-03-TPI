@@ -12,3 +12,4 @@ ENV/
 entorno/
 __pycache__/
 *.pyc
+desktop.ini
