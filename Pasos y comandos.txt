@@ -81,15 +81,10 @@ datos del contenedor, por ejemplo migraciones de Alembic.
     - para controlar y comprobar si existen cambios de migraciones de la base de datos LUEGO DE REALIZAR UN GIT PULL
         se debe introducir primero el comando CON DOCKER CORRIENDO/ENCENDIDO EN EL CONTENEDOR:
 
-        docker compose exec api alembic current
+        docker compose exec api alembic history --indicate-current
 
-        esto dara el nombre de la actual migracion/version en la que esta parada tu BD, recuerda ese nombre,
-        ahora ejecuta el siguiente codigo:
+        esto dara el nombre de la actual migracion/version en la que esta parada tu BD y todas las demas.
 
-        docker compose exec api alembic heads
-
-        esta traera el nombre de la ULTIMA MIGRACION, es decir LA MAS ACTUALIZADA, por lo que deberas realizar la 
-        actualizacion de la base de datos, es decir un pull de bd, o "migrar" a la nueva version.
         si se confirma que existen migraciones para realizar (pull) segun git, entonces se debe realizar el siguiente comando
         
         docker-compose exec api alembic upgrade head
@@ -98,10 +93,42 @@ datos del contenedor, por ejemplo migraciones de Alembic.
         
         docker-compose exec api alembic revision --autogenerate -m "<<nombre de migracion>>"
 
+        tambien si quieres saber si DEBES hacer una migracion, debes colocar el siguiente codigo que te devuelve si
+        la BD no esta actualizada segun el migrate:
+
+          docker compose exec api alembic check
+
+        OJO
+
+            -realizar un RE-BUILD del compose se debe realizar un upgrade head de la bd
+            -realziar una nueva migracion no te "cambia" a la mas actual debes seguidamente de realizar la migracion,
+                colocar el upgrade head para tener los mismos cambios
+            
+
+
     OJO al cerrar vsc no actualiza el codigo fuente el codigo es imperativo hacerlo para reflejar cambios.
     tambien, realizar o pushear migraciones, si no se suben al git, quedaran solo en disco, por lo que si se realiza
     una nueva migracion, se debe actualizar el repositorio remoto OBLIGATORIAMENTE, de esa manera nos aseguramos de que 
     aquellos que utilizan el repositorio, tienen acceso a la recreacion de la bd.
 
+--------------------------------------------------------------------
+COMANDOS PARA PYTEST
 
+    1- verificar que no haga falta realizar un docker compose up --build (hacerlo si es necesario)
+    2- debe estar corriendo docker 
+    3- verificar que no se deba realizar una migracion con alembic.(hacerlo si es necesario)
+    4- para ejecutar pytest se debe realizar el siguiente comando:
+        docker compose exec api python -m pytest -v 
+
+        .exec, se refiere a que ejecute el comando dentro de el contenedor
+        .api, es para especificar el contenedor donde se ejecuta el comando, es el mismo nombre que se encuentra en el 
+            docker-compose.yml
+        .python, es para que utilize python y sus variables y dependencias
+        . -m, parametro python para lo anterior
+        .pytest, arranca la prueba
+        .-v, es para que muestre en detalle la ejecucion de la prueba y los errores que pueda ocurrir
+
+    la prueba termina automaticamentey devuelve el control de la consola o terminal.
+
+    
 
