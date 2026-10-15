@@ -33,6 +33,8 @@ class RegistroSolicitud(Base):
     origen_long = Column(Float, nullable=False)
     destino_lat = Column(Float, nullable=False)
     destino_long = Column(Float, nullable=False)
+    origen_text = Column(String(255), nullable=False)
+    destino_text = Column(String(255), nullable=False)
     fecha_solicitud = Column(
         DateTime(timezone=True), 
         default=lambda: datetime.now(timezone.utc), #Si al guardar no le pasas fecha, Python tomará automáticamente la fecha y hora actual en tiempo universal coordinado (UTC)
