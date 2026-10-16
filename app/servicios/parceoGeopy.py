@@ -29,9 +29,6 @@ ZONA_PERMITIDA = {
     "lon_max": -58.7000   # Límite Este
 }
 
-
-
-
 def obtener_coordenadas(direccion: str) -> tuple[float, float]: #retorna tupla (lat,lon) en ese orden
     '''
         Convierte una direccion de texto en una tupla (lat, lon).
