@@ -14,3 +14,4 @@ __pycache__/
 *.pyc
 desktop.ini
 mis-notas-rocio/
+.agents/
