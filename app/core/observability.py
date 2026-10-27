@@ -18,13 +18,15 @@ _SECRET_ASSIGNMENT = re.compile(
 _SENSITIVE_QUERY = re.compile(
     r"(?i)([?&](?:password|passwd|token|access[_-]?token|refresh[_-]?token|"
     r"api[_-]?key|client[_-]?secret|private[_-]?key|secret[_-]?key|secret|"
-    r"authorization|credential|idempotency[_-]?key)=)"
+    r"authorization|credential|idempotency[_-]?key|"
+    r"(?:origen|destino)[_-](?:latitud|longitud))=)"
     r"[^&#\s]+"
 )
 _BEARER_TOKEN = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/-]+=*")
 _URL_CREDENTIALS = re.compile(r"(?i)(://)[^/@\s:]+:[^/@\s]+@")
 _COORDINATE_ASSIGNMENT = re.compile(
-    r"(?i)\b(lat(?:itude|itud)?|lon(?:gitude|gitud)?|lng)"
+    r"(?i)\b((?:(?:origen|destino)[_-])?"
+    r"(?:lat(?:itude|itud)?|lon(?:gitude|gitud)?|lng))"
     r"(\s*[:=]\s*)-?\d{1,3}(?:\.\d+)?"
 )
 _SENSITIVE_KEYS = {

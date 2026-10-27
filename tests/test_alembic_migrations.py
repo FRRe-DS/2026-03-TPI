@@ -42,6 +42,7 @@ def test_full_alembic_upgrade_and_downgrade_on_fresh_sqlite(
             "estado_operativo",
             "reservas_temporales",
             "registros_idempotencia",
+            "eventos_operativos",
             "alembic_version",
         } <= table_names
 
@@ -56,6 +57,7 @@ def test_full_alembic_upgrade_and_downgrade_on_fresh_sqlite(
             "estado_operativo",
             "reservas_temporales",
             "registros_idempotencia",
+            "eventos_operativos",
         } <= table_names_after_upgrade
     finally:
         get_settings.cache_clear()

@@ -11,6 +11,7 @@ from app.schemas.schemas import ActualizarUbicacion
 
 
 class LocationWriteResult(str, Enum):
+    CREATED = "CREATED"
     APPLIED = "APPLIED"
     IDEMPOTENT = "IDEMPOTENT"
     STALE = "STALE"
@@ -51,10 +52,14 @@ if current then
     end
 end
 redis.call('SET', KEYS[1], ARGV[2], 'EX', ARGV[5])
+if not current then
+    return 2
+end
 return 1
 """
 
 _WRITE_RESULTS = {
+    2: LocationWriteResult.CREATED,
     1: LocationWriteResult.APPLIED,
     0: LocationWriteResult.IDEMPOTENT,
     -1: LocationWriteResult.STALE,

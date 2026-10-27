@@ -16,7 +16,8 @@ def test_sanitize_text_redacts_credentials_query_values_and_gps() -> None:
     message = (
         "url=https://maps.example/route?access_token=query-secret&mode=driving "
         "Authorization: Bearer header-secret password=plain-secret "
-        "latitud=-27.451234 longitud=-58.986543"
+        "latitud=-27.451234 longitud=-58.986543 "
+        "/estimacion?origen_latitud=-34.6037&destino_longitud=-58.4333"
     )
 
     sanitized = sanitize_text(message)
@@ -26,6 +27,8 @@ def test_sanitize_text_redacts_credentials_query_values_and_gps() -> None:
     assert "plain-secret" not in sanitized
     assert "-27.451234" not in sanitized
     assert "-58.986543" not in sanitized
+    assert "-34.6037" not in sanitized
+    assert "-58.4333" not in sanitized
     assert "mode=driving" in sanitized
 
 

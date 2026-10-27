@@ -3,11 +3,12 @@ from contextlib import contextmanager
 from typing import Self
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.models import (
     EstadoOperativoORM,
+    EventoOperativoORM,
     RegistroIdempotenciaORM,
     ReservaTemporalORM,
 )
@@ -29,6 +30,34 @@ class SqlAlchemyOperationalRepository:
         stored = self._session.merge(state)
         self._session.flush()
         return stored
+
+    def get_event(self, event_id: UUID) -> EventoOperativoORM | None:
+        return self._session.get(EventoOperativoORM, event_id)
+
+    def save_event(self, event: EventoOperativoORM) -> EventoOperativoORM:
+        stored = self._session.merge(event)
+        self._session.flush()
+        return stored
+
+    def lock_conductor(self, conductor_id: UUID) -> None:
+        if (
+            self._session.bind is not None
+            and self._session.bind.dialect.name == "postgresql"
+        ):
+            self._lock_key(int.from_bytes(conductor_id.bytes[:8], "big", signed=True))
+
+    def lock_event(self, event_id: UUID) -> None:
+        if (
+            self._session.bind is not None
+            and self._session.bind.dialect.name == "postgresql"
+        ):
+            self._lock_key(int.from_bytes(event_id.bytes[:8], "big", signed=True))
+
+    def _lock_key(self, lock_key: int) -> None:
+        self._session.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_key)"),
+            {"lock_key": lock_key},
+        )
 
     def get_reservation(
         self, conductor_id: UUID, *, for_update: bool = False

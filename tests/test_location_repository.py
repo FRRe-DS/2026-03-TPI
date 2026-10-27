@@ -34,7 +34,7 @@ def test_redis_location_upsert_is_conditional_and_atomic() -> None:
                 longitud=-58.9866,
                 timestamp_ubicacion=timestamp,
             )
-            assert await repository.upsert(first) is LocationWriteResult.APPLIED
+            assert await repository.upsert(first) is LocationWriteResult.CREATED
 
             stored = await repository.get_current(conductor_id)
             assert stored is not None
@@ -99,7 +99,7 @@ def test_redis_location_expires_at_configured_ttl() -> None:
                 longitud=0,
                 timestamp_ubicacion=datetime.now(timezone.utc),
             )
-            assert await repository.upsert(location) is LocationWriteResult.APPLIED
+            assert await repository.upsert(location) is LocationWriteResult.CREATED
             assert await repository.get_current(conductor_id) is not None
 
             await asyncio.sleep(1.1)

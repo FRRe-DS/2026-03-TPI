@@ -239,6 +239,7 @@ def test_idempotency_record_crud_and_unique_scope(db_session: Session) -> None:
 def test_models_do_not_persist_gps_or_candidate_projection() -> None:
     assert set(Base.metadata.tables) == {
         "estado_operativo",
+        "eventos_operativos",
         "reservas_temporales",
         "registros_idempotencia",
     }

@@ -67,6 +67,28 @@ class EstadoOperativoORM(Base):
     )
 
 
+class EventoOperativoORM(Base):
+    __tablename__ = "eventos_operativos"
+    __table_args__ = (
+        CheckConstraint(
+            "length(body_hash) = 64", name="ck_evento_operativo_hash_sha256"
+        ),
+        CheckConstraint(
+            "response_status BETWEEN 100 AND 599",
+            name="ck_evento_operativo_response_status",
+        ),
+    )
+
+    event_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    conductor_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    body_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    response_status: Mapped[int] = mapped_column(Integer, nullable=False)
+    response_body: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    recibido_en: Mapped[datetime] = mapped_column(
+        UTCDateTime(), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+
 class ReservaTemporalORM(Base):
     __tablename__ = "reservas_temporales"
     __table_args__ = (

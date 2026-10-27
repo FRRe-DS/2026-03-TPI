@@ -57,7 +57,9 @@ La aplicación se organiza por responsabilidad; los routers traducen HTTP y dele
 | `alembic/` | Migraciones versionadas de las tablas persistentes | PostgreSQL |
 | `tests/` | Pruebas unitarias, integración API/repositorio y escenarios de concurrencia | PyTest, fixtures, mocks |
 
-La estructura anterior es el destino modular recomendado, no una afirmación de que esos archivos ya existan. La migración desde la estructura piloto actual debe realizarse por responsabilidad y conservar compatibilidad solo cuando la defina OpenAPI.
+La implementación HTTP actual conserva el paquete existente `app/enrutador/` y separa los routers de ubicaciones, estado operativo, reservas y estimación de rutas. La lógica común está en `app/servicios/operaciones.py`; el contrato inyectable para mapas está en `app/servicios/route_estimation.py`. Los routers obtienen repositorios mediante `Depends`; no ejecutan consultas ORM directamente.
+
+La autenticación de solicitudes con credenciales HTTP delega en el adaptador `app.state.token_authenticator`, que debe validar identidad y autorización de la operación con M1. Como ese acuerdo/adapter aún no existe, la API falla cerrada: credenciales ausentes producen `401` y una credencial recibida sin verificador configurado produce `503`. De modo análogo, rutas no fabrican distancias: `GET /api/v1/rutas/estimacion` necesita un estimador configurado y responde `503` si no está disponible. `RESERVATION_TTL_SECONDS` debe configurarse conforme al acuerdo con M5; no se reutiliza el TTL de GPS.
 
 ### Infraestructura y persistencia
 
@@ -83,6 +85,8 @@ Los siguientes son modelos conceptuales y no deben confundirse con las tablas pi
 
 Escritura repetida del mismo timestamp y mismas coordenadas: idempotente. El mismo timestamp con coordenadas diferentes: `409`. Una actualización fuera de orden no reemplaza la más nueva y responde conflicto según contrato. El servicio determina vigencia con reloj inyectable y elimina/expira datos; una búsqueda siempre aplica el TTL incluso si la limpieza física todavía no ocurrió.
 
+El schema rechaza timestamps sin UTC y Redis conserva el orden relativo entre muestras vigentes. El endpoint rechaza cualquier timestamp posterior al reloj UTC inyectado. No se impone antigüedad máxima al timestamp del dispositivo, ya que el contrato no la define y el TTL de 30 segundos se calcula desde la recepción.
+
 ### 4.2 Estado operacional `EstadoOperativoConductor`
 
 | Campo | Tipo/semántica |
@@ -95,6 +99,8 @@ Escritura repetida del mismo timestamp y mismas coordenadas: idempotente. El mis
 | `recibido_en`, `actualizado_en` | marcas UTC de recepción y evento aplicado |
 
 M4 no infiere habilitación ni inventa eventos faltantes. Sin `event_id`/timestamp, el contrato de integración debe especificar entrega ordenada; la proyección se actualiza según orden de recepción hasta resolver el acuerdo.
+
+Cuando `event_id` está presente, `eventos_operativos` conserva el hash canónico y la respuesta original para deduplicar reintentos incluso después de que la proyección reciba eventos más recientes. Una clave reutilizada con distinto cuerpo responde `422`.
 
 ### 4.3 Reserva `ReservaTemporal`
 
@@ -123,7 +129,7 @@ Clave compuesta por actor/operación y `Idempotency-Key`; almacenar hash canóni
 
 No usar `RegistroSolicitud` ni las tablas piloto como histórico de coordenadas por defecto. Guardar solo la información necesaria para operación. Definir retención para claves de idempotencia y auditoría; excluir coordenadas, tokens, secretos y query strings de logs. Si un registro necesita ubicación de origen/destino para una operación funcional, documentar finalidad, acceso y expiración específica antes de persistirlo.
 
-La primera capa ORM relacional mantiene únicamente `estado_operativo`, `reservas_temporales` y `registros_idempotencia`. La ubicación GPS permanece en el repositorio efímero previsto en 4.1 y `Candidato` se calcula como DTO; ninguno se materializa como tabla SQL. Los DTOs de respuesta de estado y reserva habilitan `from_attributes` para serializar proyecciones ORM, y los timestamps se normalizan a UTC tanto en PostgreSQL como en SQLite de pruebas. `expira_en` del registro de idempotencia queda nullable mientras se acuerda una política de retención.
+La capa ORM relacional mantiene `estado_operativo`, `eventos_operativos`, `reservas_temporales` y `registros_idempotencia`. La ubicación GPS permanece en el repositorio efímero previsto en 4.1 y `Candidato` se calcula como DTO; ninguno se materializa como tabla SQL. Los DTOs de respuesta de estado y reserva habilitan `from_attributes` para serializar proyecciones ORM, y los timestamps se normalizan a UTC tanto en PostgreSQL como en SQLite de pruebas. `expira_en` del registro de idempotencia queda nullable mientras se acuerda una política de retención.
 
 ## 5. Contratos HTTP y errores
 
@@ -190,6 +196,8 @@ Mapeo de errores a acordar con los casos del OpenAPI: validación estructural `4
 3. Cuando no hay proveedor, solo usar `estimacion_local` si está definida y aprobada como fallback; no presentar distancia lineal como distancia de ruta sin declararlo. Si no existe fallback válido, devolver `503`/`504`.
 4. M9 usa estimación y validación de cobertura para decidir viabilidad; M4 no crea ni confirma una reserva del viaje.
 5. M7 requiere métricas asociadas a `solicitud_id` para tarifación. El mecanismo proactivo/asíncrono de envío descrito por la constitución no está modelado como operación saliente en el OpenAPI actual (la ruta actual es GET y los consumidores consultan). No introducir callback/evento no contratado: acordar contrato, entrega, reintentos e idempotencia con M7 y actualizar OpenAPI antes de implementar ese envío.
+
+El endpoint GET y el límite inyectable del estimador están publicados; la implementación del proveedor, geocodificación, fallback y cobertura permanece pendiente del acuerdo de mapas/M9. Las pruebas API inyectan un proveedor simulado y verifican éxito, límites, timeout y ausencia del proveedor sin afirmar integración externa.
 
 ## 7. Integraciones externas
 

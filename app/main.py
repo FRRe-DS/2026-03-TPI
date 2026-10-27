@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from redis.asyncio import Redis
@@ -8,7 +9,11 @@ from app.core.config import Settings, get_settings
 from app.core.middleware import RequestIdMiddleware
 from app.core.observability import configure_logging
 from app.core.problem_details import register_problem_details_handlers
+from app.enrutador.estado_operativo import router as estado_operativo_router
 from app.enrutador.eventos import prueba
+from app.enrutador.reservas import router as reservas_router
+from app.enrutador.rutas import router as rutas_router
+from app.enrutador.ubicaciones import router as ubicaciones_router
 from app.repositories.locations import RedisLocationRepository
 
 
@@ -44,9 +49,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version="1.0.0",
         lifespan=lifespan,
     )
+    application.state.settings = app_settings
+    application.state.clock = lambda: datetime.now(timezone.utc)
     application.add_middleware(RequestIdMiddleware)
     register_problem_details_handlers(application)
     application.include_router(prueba, prefix="/PruebaM4")
+    application.include_router(ubicaciones_router)
+    application.include_router(estado_operativo_router)
+    application.include_router(reservas_router)
+    application.include_router(rutas_router)
 
     @application.get("/")
     def read_home() -> dict[str, str]:

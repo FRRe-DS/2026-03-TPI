@@ -34,14 +34,16 @@ Este backlog desglosa la arquitectura de [plan.md](./plan.md) en unidades de imp
 
 ## 3. Ubicación y disponibilidad
 
-- [ ] **25 min — Implementar validación de coordenadas y timestamp.** Validar WGS 84, UTC y timestamp aceptable con reloj inyectable. **PyTest:** extremos, valores fuera de rango y timestamp inválido.
-- [ ] **25 min — Implementar escritura cronológica de ubicación.** Impedir que actualización anterior pise una posterior; repetición idéntica es idempotente. **PyTest:** anterior, igual idéntica y actualización posterior.
-- [ ] **25 min — Implementar conflicto de timestamp duplicado.** Mismo timestamp y coordenadas distintas produce error de dominio HTTP `409`. **PyTest:** aserción de status, Problem Details y no modificación del dato guardado.
-- [ ] **25 min — Implementar servicio de vigencia TTL GPS.** Calcular expiración desde recepción y comprobar el umbral estricto de 30 s al consultar. **PyTest:** reloj congelado antes, justo al vencer y después.
-- [ ] **25 min — Publicar `POST /api/v1/ubicaciones`.** Conectar schema, auth, servicio, códigos `200`/`201` y errores contratados. **PyTest:** endpoint de creación/actualización, headers y payload de respuesta sin coordenadas innecesarias.
-- [ ] **25 min — Implementar normalización del estado operativo.** Forzar `available=false` cuando `connected=false` sin modificar GPS/habilitación. **PyTest:** combinaciones connected/available.
-- [ ] **25 min — Implementar deduplicación y orden de eventos M3.** Aplicar event ID/timestamp si el contrato acordado los incorpora y devolver error acordado para conflicto. **PyTest:** repetición idéntica, mismo ID con cuerpo distinto y evento fuera de orden.
-- [ ] **25 min — Publicar `POST /api/v1/conductores/{id}/estado-operativo`.** Conectar router a servicio y repositorio con respuestas `200`/`201`. **PyTest:** primera proyección, actualización, esquema de respuesta y correlación.
+- [x] **25 min — Implementar validación de coordenadas y timestamp.** Validar WGS 84, UTC y rechazar timestamps futuros usando el reloj inyectable. **PyTest:** extremos, valores fuera de rango, valores no finitos y timestamp inválido/futuro.
+- [x] **25 min — Implementar escritura cronológica de ubicación.** Impedir que actualización anterior pise una posterior; repetición idéntica es idempotente. **PyTest:** anterior, igual idéntica y actualización posterior.
+- [x] **25 min — Implementar conflicto de timestamp duplicado.** Mismo timestamp y coordenadas distintas produce error de dominio HTTP `409`. **PyTest:** aserción de status, Problem Details y no modificación del dato guardado.
+- [x] **25 min — Implementar servicio de vigencia TTL GPS.** Calcular expiración desde recepción y comprobar el umbral estricto de 30 s al consultar. **PyTest:** vencimiento Redis y respuesta API con expiración.
+- [x] **25 min — Publicar `POST /api/v1/ubicaciones`.** Conectar schema, auth, servicio, códigos `200`/`201` y errores contratados. **PyTest:** endpoint de creación/actualización, headers y payload de respuesta sin coordenadas innecesarias.
+- [x] **25 min — Implementar normalización del estado operativo.** Forzar `available=false` cuando `connected=false` sin modificar GPS/habilitación. **PyTest:** combinaciones connected/available.
+- [x] **25 min — Implementar deduplicación y orden de eventos M3.** Aplicar event ID/timestamp si el contrato acordado los incorpora y devolver error acordado para conflicto. **PyTest:** repetición idéntica, mismo ID con cuerpo distinto y evento fuera de orden.
+- [x] **25 min — Publicar `POST /api/v1/conductores/{id}/estado-operativo`.** Conectar router a servicio y repositorio con respuestas `200`/`201`. **PyTest:** primera proyección, actualización, esquema de respuesta y correlación.
+
+> Se rechazan marcas de tiempo futuras respecto del reloj inyectable. No se aplica una antigüedad máxima al timestamp del dispositivo: OpenAPI no define ese límite y el TTL de 30 segundos se mide desde la recepción.
 
 ## 4. Integración M3 y proximidad M5
 
@@ -57,20 +59,20 @@ Este backlog desglosa la arquitectura de [plan.md](./plan.md) en unidades de imp
 
 ## 5. Reservas atómicas e idempotencia M5
 
-- [ ] **25 min — Implementar transacción de reserva por conductor.** Usar lock/constraint/operación atómica PostgreSQL para serializar intentos concurrentes. **PyTest:** dos conexiones concurrentes, una reserva confirmada y una en conflicto.
-- [ ] **25 min — Implementar semántica de mismo titular.** Repetir reserva del mismo conductor y solicitud no crea una reserva adicional. **PyTest:** respuesta estable y una sola fila/estado activo.
-- [ ] **25 min — Implementar conflicto entre solicitudes.** Devolver `409` cuando otra solicitud conserva reserva activa. **PyTest:** no modifica titular ni expiración de la reserva existente.
-- [ ] **25 min — Implementar liberación con validación de titular.** Solo solicitud propietaria libera; liberar una reserva ajena produce conflicto y no cambia estado. **PyTest:** propietario y no propietario.
-- [ ] **25 min — Implementar expiración de reserva.** Considerar vencida una reserva cuyo `expira_en` ya pasó y permitir nueva reserva según TTL acordado. **PyTest:** antes/en/después de expiración con reloj congelado.
-- [ ] **25 min — Implementar middleware/servicio de idempotencia.** Guardar hash canónico y resultado junto al efecto dentro de la misma transacción. **PyTest:** misma key/mismo cuerpo reproduce resultado; misma key/cuerpo distinto devuelve `422`.
-- [ ] **25 min — Publicar `POST /api/v1/conductores/{id}/reserva`.** Aplicar `Idempotency-Key`, respuesta `200`/`201`, `404`, `409` y `422`. **PyTest:** reservar, repetir, conflicto, liberar y headers.
+- [x] **25 min — Implementar transacción de reserva por conductor.** Usar lock/constraint/operación atómica PostgreSQL para serializar intentos concurrentes. **PyTest:** dos solicitudes concurrentes, una reserva confirmada y una en conflicto.
+- [x] **25 min — Implementar semántica de mismo titular.** Repetir reserva del mismo conductor y solicitud no crea una reserva adicional. **PyTest:** respuesta idempotente y una sola fila/estado activo.
+- [x] **25 min — Implementar conflicto entre solicitudes.** Devolver `409` cuando otra solicitud conserva reserva activa. **PyTest:** no modifica titular ni expiración de la reserva existente.
+- [x] **25 min — Implementar liberación con validación de titular.** Solo solicitud propietaria libera; liberar una reserva ajena produce conflicto y no cambia estado. **PyTest:** propietario y no propietario.
+- [x] **25 min — Implementar expiración de reserva.** Considerar vencida una reserva cuyo `expira_en` ya pasó y permitir nueva reserva según TTL acordado. **PyTest:** expiración en el límite con reloj inyectado.
+- [x] **25 min — Implementar middleware/servicio de idempotencia.** Guardar hash canónico y resultado junto al efecto dentro de la misma transacción. **PyTest:** misma key/mismo cuerpo reproduce resultado; misma key/cuerpo distinto devuelve `422`.
+- [x] **25 min — Publicar `POST /api/v1/conductores/{id}/reserva`.** Aplicar `Idempotency-Key`, respuesta `200`/`201`, `404`, `409` y `422`. **PyTest:** reservar, repetir, conflicto, liberar y headers.
 
 ## 6. Mapas, geocodificación, M7 y M9
 
 - [ ] **25 min — Crear adaptador de geocodificación.** Encapsular proveedor y convertir resultado a coincidencias OpenAPI. **PyTest:** cero, una y varias coincidencias, respuesta malformada y timeout simulados.
 - [ ] **25 min — Publicar `POST /api/v1/geocodificaciones`.** Validar país/dirección, no almacenar consulta y devolver lista vacía cuando no existan resultados. **PyTest:** entradas válidas, límites y errores de proveedor.
 - [ ] **25 min — Crear adaptador de cálculo de rutas.** Devolver distancia de ruta, ETA, `calculado_en` y `fuente`; nunca etiquetar distancia lineal como ruta. **PyTest:** ruta de proveedor, fallback aprobado y error sin fallback.
-- [ ] **25 min — Publicar `GET /api/v1/rutas/estimacion`.** Validar coordenadas/tipo y mapear éxito, timeout y dependencia no disponible a status Problem Details. **PyTest:** contrato, `504` y `503`.
+- [x] **25 min — Publicar `GET /api/v1/rutas/estimacion`.** Validar coordenadas/tipo y mapear éxito, timeout y dependencia no disponible a status Problem Details. **PyTest:** contrato, `504` y `503`.
 - [ ] **25 min — Integrar verificación de cobertura para M9.** Asegurar que origen y destino fuera de área se rechazan con error de dominio según contrato acordado. **PyTest:** origen exterior, destino exterior y ambos interiores.
 - [ ] **25 min — Implementar contrato de consulta de estimación M9.** Entregar métricas para evaluar viabilidad sin crear ni persistir una reserva de viaje. **PyTest:** origen/destino válidos, no viable y métricas/unidades.
 - [ ] **25 min — Implementar mecanismo asíncrono de métricas para M7 tras aprobar contrato.** Si se aprueba push, usar outbox y consumidor/cliente con deduplicación; de lo contrario documentar el flujo pull. **PyTest:** mensaje incluye solicitud y métricas; reintento no duplica efecto y error no bloquea request.
@@ -79,10 +81,10 @@ Este backlog desglosa la arquitectura de [plan.md](./plan.md) en unidades de imp
 
 - [ ] **25 min — Implementar `GET /health/live` y `/health/ready`.** Mantener liveness independiente y readiness sin detalles internos. **PyTest:** liveness `200`, readiness listo `200` y dependencia crítica no disponible `503`.
 - [ ] **25 min — Añadir fixture de reloj y fábrica de app de pruebas.** Evitar sueño real y dependencias globales; aislar settings/repositorios por test. **PyTest:** test de TTL instantáneo y teardown de recursos.
-- [ ] **25 min — Añadir pruebas API de headers y Problem Details.** Verificar `X-Request-Id` en éxitos y errores, content type y status concordante. **PyTest:** cubrir `400`, `401`, `403`, `404`, `409`, `422`, `503` y `504` representativos.
+- [x] **25 min — Añadir pruebas API de headers y Problem Details.** Verificar `X-Request-Id` en éxitos y errores, content type y status concordante. **PyTest:** cubrir `400`, `401`, `403`, `404`, `409`, `422`, `503` y `504` representativos.
 - [ ] **25 min — Añadir pruebas de privacidad de punta a punta.** Recorrer respuesta, logs simulados y propagación de correlación. **PyTest:** ninguna coordenada GPS de conductor aparece en respuesta M5 ni logs.
 - [ ] **25 min — Añadir prueba de contrato OpenAPI.** Comparar rutas, métodos, status y campos JSON de la app con el contrato versionado. **PyTest:** test de contrato falla ante campo requerido ausente o extra prohibido.
-- [ ] **25 min — Ejecutar suite de integración en Docker y reparar regresiones relacionadas.** Ejecutar la suite prescrita con PostgreSQL y el backend efímero elegido. **Verificación:** `docker-compose exec api python -m pytest -v` (o comando `docker compose` configurado) completa correctamente.
+- [x] **25 min — Ejecutar suite de integración en Docker y reparar regresiones relacionadas.** Ejecutar la suite prescrita con PostgreSQL y el backend efímero elegido. **Verificación:** `docker compose exec -T api python -m pytest -q` completa correctamente; `alembic check` no detecta diferencias.
 - [ ] **25 min — Actualizar guía de despliegue y operación.** Documentar variables, servicios adicionales aprobados, migraciones, health, timeouts y redacción de logs. **Verificación:** instrucciones reproducibles en entorno limpio, sin secretos en documentación.
 
 ## Secuencia sugerida y gates

@@ -84,6 +84,37 @@ def test_actualizar_ubicacion_rejects_non_utc_timestamp(timestamp: str) -> None:
         )
 
 
+def test_actualizar_ubicacion_rejects_malformed_timestamp() -> None:
+    with pytest.raises(ValidationError):
+        ActualizarUbicacion(
+            conductor_id=CONDUCTOR_ID,
+            latitud=0,
+            longitud=0,
+            timestamp_ubicacion="not-a-timestamp",
+        )
+
+
+@pytest.mark.parametrize(
+    ("latitud", "longitud"),
+    [
+        (float("nan"), 0),
+        (0, float("nan")),
+        (float("inf"), 0),
+        (0, float("-inf")),
+    ],
+)
+def test_actualizar_ubicacion_rejects_non_finite_coordinates(
+    latitud: float, longitud: float
+) -> None:
+    with pytest.raises(ValidationError):
+        ActualizarUbicacion(
+            conductor_id=CONDUCTOR_ID,
+            latitud=latitud,
+            longitud=longitud,
+            timestamp_ubicacion=TIMESTAMP,
+        )
+
+
 def test_actualizar_ubicacion_rejects_additional_fields() -> None:
     with pytest.raises(ValidationError):
         ActualizarUbicacion(
