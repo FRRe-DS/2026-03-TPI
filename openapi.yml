@@ -1,0 +1,1229 @@
+openapi: 3.1.0
+info:
+  title: 'DS 2026 - API del Módulo 4: Ubicación y Disponibilidad'
+  version: 1.0.0
+  summary: Contrato para las dos implementaciones independientes del Módulo 4.
+  description: |
+    API de Ubicación y Disponibilidad (M4). Contrato común para Grupo 3 y
+    Grupo 14.
+
+    Convenciones:
+    - Rutas: todas las rutas de negocio usan el prefijo /api/v1. El servidor
+      está expresado como URL relativa para que cada grupo configure host y
+      puerto sin modificar las rutas.
+
+    - Autenticación: Authorization: Bearer <JWT> emitido/validado por M1.
+      Los nombres de roles o scopes de servicio deben acordarse con M1; hasta
+      entonces cada operación identifica qué módulo la consume. /health/live
+      y /health/ready no exigen token.
+
+    - Correlación: X-Request-Id puede enviarse en cualquier solicitud. M4 debe
+      devolverlo en toda respuesta, incluidos errores; si falta o no cumple el
+      formato, M4 genera uno nuevo y no rechaza la llamada por ese motivo.
+      El identificador debe aparecer en logs estructurados (RNF-14).
+
+    - Errores: application/problem+json conforme al formato Problem Details
+      acordado en el README del repositorio (RFC 7807). Los errores
+      genéricos usan type about:blank; los errores de dominio usan un type
+      específico. El status del cuerpo coincide con el estado HTTP.
+
+    - Formato: JSON para cuerpos de negocio. Identificadores propuestos como
+      UUID; coordenadas WGS 84 en grados decimales; distancias en kilómetros;
+      ETA en minutos; timestamps RFC 3339 en UTC. Los nombres JSON usan
+      snake_case y los valores enum son MAYÚSCULAS con guion bajo.
+
+    - Estado del conductor: M3 es propietario de la habilitación y los
+      vehículos. M3 comunica eventos puntuales de intención de disponibilidad
+      con connected y available booleanos; no envía un listado completo. Para
+      filtrar, M4 consulta a M3 por habilitación y tipos de vehículo. La ruta y
+      el formato de esa consulta pertenecen al contrato de M3.
+
+    - Ubicación del conductor: la aplicación móvil del conductor envía su GPS
+      directamente a M4. M4 es responsable de recibir, validar, actualizar y
+      vencer la ubicación en almacenamiento efímero en memoria con TTL (por
+      ejemplo, Redis). Nunca se espera que M3 envíe latitud o longitud.
+
+    - Elegibilidad: solo habilitación APPROVED es elegible. PENDING, OBSERVED,
+      SUSPENDED y REJECTED no pueden recibir viajes. M4 además exige connected
+      y available verdaderos, ubicación vigente, vehículo compatible y ninguna
+      reserva temporal activa. M4 consulta el estado vigente a M3 al filtrar;
+      si M3 no responde, no devuelve candidatos sin validar.
+
+    - Ubicación: la vida útil (TTL) es configurable en M4. La duración concreta
+      debe acordarse entre los grupos; no se conservan ubicaciones vencidas ni
+      se usan en búsquedas. Estamos utilizando 30 segundos por ahora.
+
+    - Idempotencia y concurrencia: reservar un conductor es atómico. La misma
+      solicitud_id repetida sobre el mismo conductor no crea una segunda
+      reserva; otra solicitud recibe 409. M5 libera explícitamente su reserva.
+
+    - Eventos M3: el acuerdo requiere connected y available como
+      booleanos y eventos puntuales, no una lista completa. event_id y
+      timestamp_evento son campos opcionales propuestos; su obligatoriedad y la
+      garantía de orden de entrega deben confirmarse con M3 antes de cerrar la
+      integración. Sin esos datos M4 procesa los eventos en orden de recepción.
+
+    - Privacidad: la búsqueda de cercanos entrega a M5 solo los datos necesarios
+      para priorizar candidatos; no expone las coordenadas exactas del conductor.
+      Los consumidores y M4 deben evitar registrar las coordenadas enviadas en
+      la query string.
+      
+    - Reintentos: los consumidores aplican timeouts y reintentos limitados según
+      RNF-13. No reintentan indefinidamente.
+  contact:
+    name: Módulo 4
+  license:
+    name: Uso académico - Desarrollo de Software 2026
+servers:
+  - url: /
+    description: URL relativa al host y puerto configurados para la implementación activa.
+tags:
+  - name: Ubicaciones
+    description: Posición vigente de conductores conectados.
+  - name: Disponibilidad
+    description: Estado operativo sincronizado desde M3 y reserva temporal.
+  - name: Proximidad
+    description: Candidatos aptos para despacho inmediato.
+  - name: Rutas
+    description: Estimaciones de distancia y ETA.
+  - name: Geocodificación
+    description: Conversión de direcciones y coordenadas.
+  - name: Salud
+    description: Disponibilidad técnica de la instancia para integración.
+x-acuerdos-pendientes:
+  - Confirmar con M3 y M5 el identificador compartido (UUID o texto).
+  - Incorporar la ruta y el esquema definitivos de consulta de elegibilidad de M3.
+  - Confirmar si event_id y timestamp_evento serán enviados por M3 y qué garantía de orden tendrán sus eventos.
+  - Acordar los valores de TTL de ubicación y de reserva, el radio máximo y los timeouts entre módulos.
+  - Acordar con M1 los roles/scopes requeridos por cada consumidor.
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/ubicaciones:
+    parameters:
+      - $ref: '#/components/parameters/XRequestId'
+    post:
+      tags: [Ubicaciones]
+      operationId: registrarUbicacionConductor
+      summary: La app del conductor envía su ubicación GPS vigente a M4
+      description: >-
+        Consumidor/origen: aplicación móvil del conductor, que lee el GPS del
+        dispositivo y envía una actualización cuando detecta movimiento. M4 es
+        el servidor receptor y propietario de esta proyección efímera. 
+        conductor_id debe corresponder al conductor
+        autenticado según el mecanismo de identidad de M1. La app comienza a
+        enviar actualizaciones al quedar conectado; M3 comunica a M4 la
+        intención de conexión por el endpoint de estado operativo. La marca
+        temporal pertenece al dispositivo y debe ser UTC. Una
+        posición anterior a la ya almacenada no debe sobrescribir una posición
+        más nueva; repetir exactamente la misma actualización es idempotente.
+        Si llega el mismo timestamp con coordenadas distintas, M4 responde 409
+        para evitar que el orden del GPS sea ambiguo.
+        M4 aplica un TTL configurable y no devuelve posiciones vencidas en
+        búsquedas. El registro no cambia por sí solo la habilitación ni la 
+        disponibilidad del conductor.
+      x-trazabilidad: [RF-4.1, RF-4.3, RF-4.7, RNF-05, RNF-11, RNF-14, RNF-19]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarUbicacion'
+            examples:
+              actualizacion:
+                value:
+                  conductor_id: 018f1f20-7b4a-7cc2-9d41-66382a18cc5a
+                  latitud: -34.6037
+                  longitud: -58.3816
+                  timestamp_ubicacion: '2026-10-22T15:04:05Z'
+      responses:
+        '200':
+          description: La ubicación vigente existente fue reemplazada.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UbicacionRegistrada'
+        '201':
+          description: Se creó el primer registro de ubicación vigente para el conductor.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UbicacionRegistrada'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          description: El conductor no está registrado en M4/M3 o no fue sincronizado.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemaGenerico'
+        '409':
+          description: Timestamp anterior a la ubicación vigente, o mismo timestamp con coordenadas distintas.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemaDominio'
+        '422':
+          $ref: '#/components/responses/NoProcesable'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+        '503':
+          $ref: '#/components/responses/ServicioNoDisponible'
+
+  /api/v1/conductores/{conductor_id}/estado-operativo:
+    parameters:
+      - $ref: '#/components/parameters/XRequestId'
+    post:
+      tags: [Disponibilidad]
+      operationId: registrarIntencionDisponibilidad
+      summary: Registrar un evento puntual de intención de disponibilidad enviado por M3
+      description: >-
+        Consumidor: M3, mediante identidad de servicio autorizada por M1. M3
+        envía un evento puntual cuando cambia la intención de conexión o
+        disponibilidad; no envía el listado completo de conductores. Esta ruta
+        no recibe GPS. Los campos event_id y timestamp_evento son opcionales
+        hasta que M3 confirme que los enviará. Si se informa event_id, el mismo
+        ID y cuerpo es idempotente y el mismo ID con otro cuerpo recibe 422. Si
+        se informa timestamp_evento, M4 puede rechazar eventos fuera de orden.
+        Si no se informa, M4 procesa eventos en orden de recepción y M3 debe
+        garantizar la entrega ordenada. M4 conserva el último estado recibido
+        por conductor. Si connected es false, M4
+        siempre persiste available=false, aunque el cuerpo haya enviado true.
+        M3 confirmó que solo APPROVED puede conectarse para despacho; los demás
+        estados de habilitación no son elegibles. M4 consulta a M3 para conocer
+        la habilitación vigente antes de una búsqueda de candidatos.
+      x-trazabilidad: [RF-3.4, RF-3.5, RF-3.6, RF-4.2, RF-4.4, RNF-08, RNF-09, RNF-14]
+      parameters:
+        - $ref: '#/components/parameters/ConductorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstadoOperativo'
+            examples:
+              conductorDisponible:
+                value:
+                  event_id: 018f1f20-a128-739e-8af1-4caa35108a91
+                  connected: true
+                  available: true
+                  timestamp_evento: '2026-10-22T15:04:05Z'
+      responses:
+        '200':
+          description: La proyección operativa existente quedó actualizada.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoOperativoRegistrado'
+        '201':
+          description: Se creó la primera proyección operativa del conductor.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoOperativoRegistrado'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '409':
+          description: El evento es anterior al último aplicado, o hay conflicto de orden temporal.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemaDominio'
+        '422':
+          $ref: '#/components/responses/NoProcesable'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+        '503':
+          $ref: '#/components/responses/ServicioNoDisponible'
+
+  /api/v1/conductores/cercanos:
+    parameters:
+      - $ref: '#/components/parameters/XRequestId'
+    get:
+      tags: [Proximidad]
+      operationId: buscarConductoresCercanos
+      summary: Buscar conductores disponibles y compatibles próximos a un origen
+      description: >-
+        Consumidor principal: M5, mediante identidad de servicio autorizada por
+        M1. Antes de devolver candidatos, M4 consulta la API de M3 para conocer
+        el estado vigente de habilitación y los tipos de vehículo habilitados
+        para los conductores geográficamente cercanos; M4 no solicita a M3 el
+        listado completo de conductores.
+        M4 devuelve exclusivamente candidatos APPROVED con connected=true,
+        available=true, vehículo compatible, sin reserva temporal activa y
+        ubicación dentro del TTL configurado. M3 confirmó que PENDING, OBSERVED,
+        SUSPENDED y REJECTED no pueden recibir viajes. Si M3 no puede verificar
+        esos datos, M4 no devuelve candidatos sin validar. Esta búsqueda es una
+        lista de candidatos, no una reserva: el estado puede cambiar entre la
+        consulta y la reserva; la reserva atómica es la confirmación definitiva.
+        La distancia es la distancia en línea recta entre el origen y la última
+        ubicación vigente; eta_retiro_minutos es una estimación de ruta si el
+        proveedor de mapas está disponible. Si no hay candidatos, responde 200
+        con una lista vacía. La respuesta no incluye latitud ni longitud exactas
+        del conductor para cumplir la minimización de datos de RF-4.7. Una
+        llamada posterior podria aumentar radio_km hasta radio_maximo_km. No se
+        debe registrar la URL completa en logs, porque contiene coordenadas de
+        ubicación.
+      x-trazabilidad: [RF-4.2, RF-4.3, RF-4.4, RF-4.7, RF-5.3, RNF-08, RNF-19]
+      parameters:
+        - name: origen_latitud
+          in: query
+          required: true
+          description: Latitud del origen del cliente en grados decimales (WGS 84).
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+          example: -34.6037
+        - name: origen_longitud
+          in: query
+          required: true
+          description: Longitud del origen del cliente en grados decimales (WGS 84).
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+          example: -58.3816
+        - name: tipo_vehiculo
+          in: query
+          required: true
+          description: Tipo de servicio solicitado por M5.
+          schema:
+            $ref: '#/components/schemas/TipoVehiculo'
+        - name: radio_km
+          in: query
+          required: false
+          description: Radio de esta consulta. Predeterminado 5 km; debe ser mayor que cero.
+          schema:
+            type: number
+            format: double
+            exclusiveMinimum: 0
+            default: 5
+            example: 5
+        - name: radio_maximo_km
+          in: query
+          required: false
+          description: >-
+            Techo de expansión que M5 puede usar al repetir la búsqueda. M4 no
+            amplía automáticamente la búsqueda hasta este valor. Si se informa,
+            debe ser mayor o igual que radio_km y no superar el máximo configurado
+            por M4.
+          schema:
+            type: number
+            format: double
+            exclusiveMinimum: 0
+            example: 20
+        - name: limite
+          in: query
+          required: false
+          description: Cantidad máxima de candidatos devueltos.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Búsqueda realizada; conductores puede ser una lista vacía.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+            Cache-Control:
+              description: La respuesta con información de ubicación no debe almacenarse en caché.
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoBusquedaConductores'
+              examples:
+                candidatos:
+                  value:
+                    conductores:
+                      - conductor_id: 018f1f20-7b4a-7cc2-9d41-66382a18cc5a
+                        distancia_origen_km: 0.42
+                        eta_retiro_minutos: 3
+                        tipo_vehiculo: AUTO
+                    radio_aplicado_km: 5
+                    generado_en: '2026-10-20T15:04:06Z'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '422':
+          $ref: '#/components/responses/NoProcesable'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+        '503':
+          $ref: '#/components/responses/DependenciaNoDisponible'
+        '504':
+          $ref: '#/components/responses/TiempoAgotado'
+
+  /api/v1/conductores/{conductor_id}/reserva:
+    parameters:
+      - $ref: '#/components/parameters/XRequestId'
+    post:
+      tags: [Disponibilidad]
+      operationId: cambiarReservaTemporalConductor
+      summary: Reservar temporalmente o liberar un conductor para una solicitud
+      description: >-
+        Consumidor: M5, mediante identidad de servicio autorizada por M1. M5
+        llama con estado_temporal=RESERVADO antes/de forma coordinada con
+        una oferta. M4 debe comprobar y cambiar la reserva atómicamente para
+        evitar que dos solicitudes obtengan el mismo conductor. La misma
+        solicitud_id repetida para el mismo conductor es idempotente. Si otra
+        solicitud ya lo reservó, responde 409. Para liberar, M5 envía
+        estado_temporal=LIBERADO y la solicitud_id que originó el bloqueo; solo
+        esa solicitud puede liberar su propia reserva. La reserva tiene un TTL
+        configurable; M5 debe liberar explícitamente al cerrar la oferta y no
+        depender solo del vencimiento. Se usa POST para preservar la ruta
+        acordada por los grupos.
+      x-trazabilidad: [RF-4.4, RF-5.4, RF-5.6, RNF-08, RNF-09, RNF-11]
+      parameters:
+        - $ref: '#/components/parameters/ConductorId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CambioReservaTemporal'
+            examples:
+              reservar:
+                value:
+                  estado_temporal: RESERVADO
+                  solicitud_id: 018f1f20-a128-739e-8af1-4caa35108a91
+              liberar:
+                value:
+                  estado_temporal: LIBERADO
+                  solicitud_id: 018f1f20-a128-739e-8af1-4caa35108a91
+      responses:
+        '200':
+          description: Operación repetida sin cambios (idempotencia) o liberación aplicada.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoReservaTemporal'
+        '201':
+          description: La reserva temporal se creó para esta solicitud.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoReservaTemporal'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          description: Conductor inexistente o reserva a liberar no encontrada.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemaGenerico'
+        '409':
+          description: >-
+            El conductor ya está reservado por otra solicitud, no es elegible,
+            o la solicitud_id no coincide con la reserva que se intenta liberar.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemaDominio'
+        '422':
+          $ref: '#/components/responses/NoProcesable'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+        '503':
+          $ref: '#/components/responses/DependenciaNoDisponible'
+
+  /api/v1/rutas/estimacion:
+    parameters:
+      - $ref: '#/components/parameters/XRequestId'
+    get:
+      tags: [Rutas]
+      operationId: estimarRuta
+      summary: Estimar distancia y tiempo entre origen y destino
+      description: >-
+        Consumidores: M5, M7 y M9, mediante identidades de servicio autorizadas
+        por M1. M5 usa esta operación para despacho, M7 para tarifas y M9 para
+        reservas.
+        distancia_estimada_km es la distancia de ruta (no distancia en línea
+        recta); eta_minutos es el tiempo estimado de recorrido. Las unidades son
+        km y minutos. No se garantiza que el ETA incluya tráfico en tiempo real;
+        cada implementación debe indicar en la respuesta el método y momento
+        de cálculo. No se deben guardar las coordenadas más allá del propósito
+        de la consulta. No registrar la URL completa en logs. La ruta GET
+        conserva el endpoint acordado; para despliegues con exposición de
+        coordenadas en URL, los grupos deben aprobar migrar a POST.
+      x-trazabilidad: [RF-4.6, RF-7.1, RF-9.4, RF-4.7, RNF-13, RNF-19]
+      parameters:
+        - name: origen_latitud
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+        - name: origen_longitud
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+        - name: destino_latitud
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+        - name: destino_longitud
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+        - name: tipo_vehiculo
+          in: query
+          required: false
+          description: Permite al proveedor usar el perfil de ruta adecuado (p. ej., auto o moto).
+          schema:
+            $ref: '#/components/schemas/TipoVehiculo'
+      responses:
+        '200':
+          description: Estimación calculada.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstimacionRuta'
+              examples:
+                ruta:
+                  value:
+                    origen:
+                      latitud: -34.6037
+                      longitud: -58.3816
+                    destino:
+                      latitud: -34.6158
+                      longitud: -58.4333
+                    distancia_estimada_km: 6.8
+                    eta_minutos: 18
+                    calculado_en: '2026-10-20T15:04:05Z'
+                    fuente: proveedor_mapa
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '422':
+          $ref: '#/components/responses/NoProcesable'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+        '503':
+          $ref: '#/components/responses/DependenciaNoDisponible'
+        '504':
+          $ref: '#/components/responses/TiempoAgotado'
+
+  /api/v1/geocodificaciones:
+    parameters:
+      - $ref: '#/components/parameters/XRequestId'
+    post:
+      tags: [Geocodificación]
+      operationId: geocodificarDireccion
+      summary: Resolver una dirección en coordenadas geográficas
+      description: >-
+        Operación de apoyo para RF-4.5, accesible a módulos autorizados por M1.
+        La dirección se envía en el cuerpo y
+        no en la URL. La respuesta puede contener cero o más coincidencias;
+        el consumidor debe elegir/confirmar una coincidencia ambigua. No usar
+        esta operación para persistir direcciones maestras de M2/M9.
+      x-trazabilidad: [RF-4.5, RF-4.7, RNF-13, RNF-19]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultaGeocodificacion'
+            example:
+              direccion: Av. Corrientes 1000
+              localidad: Buenos Aires
+              pais: AR
+      responses:
+        '200':
+          description: Consulta realizada; coincidencias puede ser una lista vacía.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoGeocodificacion'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '422':
+          $ref: '#/components/responses/NoProcesable'
+        '429':
+          $ref: '#/components/responses/LimiteExcedido'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+        '503':
+          $ref: '#/components/responses/DependenciaNoDisponible'
+        '504':
+          $ref: '#/components/responses/TiempoAgotado'
+
+  /health/live:
+    parameters:
+      - $ref: '#/components/parameters/XRequestId'
+    get:
+      tags: [Salud]
+      operationId: consultarLiveness
+      summary: Comprobar que el proceso de M4 está activo
+      description: Endpoint técnico sin datos de negocio; puede excluirse de la autenticación en el despliegue.
+      security: []
+      responses:
+        '200':
+          description: Proceso activo.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: UP
+  /health/ready:
+    parameters:
+      - $ref: '#/components/parameters/XRequestId'
+    get:
+      tags: [Salud]
+      operationId: consultarReadiness
+      summary: Comprobar que M4 puede atender solicitudes
+      description: No debe incluir secretos ni detalles internos en su respuesta.
+      security: []
+      responses:
+        '200':
+          description: Instancia lista.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: READY
+        '503':
+          $ref: '#/components/responses/ServicioNoDisponible'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        Credencial emitida/validada según el contrato de M1. M1 debe acordar
+        claims, roles y scopes; no incluir contraseñas ni claves en este contrato.
+  parameters:
+    XRequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      description: >-
+        Identificador de correlación opcional (1-128 caracteres alfanuméricos,
+        punto, guion o guion bajo). M4 lo devuelve en la respuesta. Si falta o
+        no es válido, M4 genera uno y continúa; no responde 400 por este header.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._-]{1,128}$'
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: >-
+        Clave única del consumidor para hacer segura la repetición de la misma
+        operación POST. Misma clave y mismo cuerpo: M4 devuelve el resultado
+        original. Misma clave con cuerpo distinto: 422. Use una clave distinta
+        para reservar y para liberar.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
+    ConductorId:
+      name: conductor_id
+      in: path
+      required: true
+      description: Identificador canónico del conductor. Propuesta pendiente de confirmar: UUID.
+      schema:
+        $ref: '#/components/schemas/Identificador'
+  headers:
+    XRequestId:
+      description: ID de correlación recibido o generado por M4.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._-]{1,128}$'
+    RetryAfter:
+      description: Segundos sugeridos antes de reintentar, si se conocen.
+      schema:
+        type: integer
+        minimum: 1
+    Location:
+      description: URI del recurso creado, cuando aplique.
+      schema:
+        type: string
+        format: uri-reference
+  schemas:
+    Identificador:
+      type: string
+      format: uuid
+      description: UUID canónico propuesto para interoperabilidad entre módulos.
+      examples: [018f1f20-7b4a-7cc2-9d41-66382a18cc5a]
+    TipoVehiculo:
+      type: string
+      enum: [AUTO, MOTO]
+      description: Tipo de servicio de vehículo acordado por M3/M4/M5/M7/M9.
+    EstadoHabilitacionM3:
+      type: string
+      enum: [PENDING, APPROVED, OBSERVED, SUSPENDED, REJECTED]
+      description: >-
+        Enum exacto reportado por M3: PENDING = revisión inicial o posterior a
+        un reenvío; APPROVED = aprobado/habilitado; OBSERVED = documentación con
+        objeciones subsanables; SUSPENDED = suspensión preventiva o sanción;
+        REJECTED = rechazo definitivo. Solo APPROVED puede recibir viajes.
+        OBSERVED se excluye igual que SUSPENDED; PENDING y REJECTED también
+        quedan excluidos. M4 consulta este valor a M3; no forma parte del
+        payload booleano de intención de disponibilidad.
+    ElegibilidadDesdeM3:
+      type: object
+      description: >-
+        Esquema de los datos que M4 necesita consultar a M3 para filtrar
+        candidatos. No es una request ni una response expuesta por M4; la ruta
+        concreta y la consulta por lotes deben figurar en el contrato OpenAPI
+        de M3.
+      additionalProperties: false
+      required: [estado_habilitacion, tipos_vehiculo_habilitados]
+      properties:
+        estado_habilitacion:
+          $ref: '#/components/schemas/EstadoHabilitacionM3'
+        tipos_vehiculo_habilitados:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/TipoVehiculo'
+    EstadoTemporal:
+      type: string
+      enum: [RESERVADO, LIBERADO]
+      description: Bloqueo temporal por participación en una oferta/solicitud.
+    Coordenada:
+      type: number
+      format: double
+    PuntoGeografico:
+      type: object
+      additionalProperties: false
+      required: [latitud, longitud]
+      properties:
+        latitud:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        longitud:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+    ActualizarUbicacion:
+      type: object
+      additionalProperties: false
+      required: [conductor_id, latitud, longitud, timestamp_ubicacion]
+      properties:
+        conductor_id:
+          $ref: '#/components/schemas/Identificador'
+        latitud:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          description: Latitud en grados decimales WGS 84.
+        longitud:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          description: Longitud en grados decimales WGS 84.
+        timestamp_ubicacion:
+          type: string
+          format: date-time
+          description: Instante UTC en formato ISO 8601, por ejemplo 2026-10-20T15:04:05Z.
+    UbicacionRegistrada:
+      type: object
+      additionalProperties: false
+      required: [conductor_id, timestamp_ubicacion, recibida_en, vigente]
+      properties:
+        conductor_id:
+          $ref: '#/components/schemas/Identificador'
+        timestamp_ubicacion:
+          type: string
+          format: date-time
+        recibida_en:
+          type: string
+          format: date-time
+        vigente:
+          type: boolean
+          const: true
+        expira_en:
+          type: string
+          format: date-time
+          description: Vencimiento según el TTL configurado en M4.
+    EstadoOperativo:
+      type: object
+      additionalProperties: false
+      required: [connected, available]
+      properties:
+        event_id:
+          $ref: '#/components/schemas/Identificador'
+          description: >-
+            Opcional hasta confirmación de M3. Si se informa, identifica de forma
+            única este evento para que M4 pueda deduplicar reintentos.
+        connected:
+          type: boolean
+          description: true si el conductor solicita conectarse; false si solicita desconectarse.
+        available:
+          type: boolean
+          description: true si está conectado y acepta ofertas; false si no desea recibirlas.
+        timestamp_evento:
+          type: string
+          format: date-time
+          description: >-
+            Opcional hasta confirmación de M3. Si se informa, instante UTC de
+            la intención que M4 usa para detectar eventos fuera de orden.
+    EstadoOperativoRegistrado:
+      type: object
+      additionalProperties: false
+      required: [conductor_id, connected, available, recibido_en]
+      properties:
+        conductor_id:
+          $ref: '#/components/schemas/Identificador'
+        event_id:
+          $ref: '#/components/schemas/Identificador'
+        connected:
+          type: boolean
+        available:
+          type: boolean
+          description: M4 devuelve false siempre que connected sea false.
+        actualizado_en:
+          type: string
+          format: date-time
+          description: >-
+            Timestamp del evento aplicado, si M3 lo envió; en caso contrario,
+            puede omitirse.
+        recibido_en:
+          type: string
+          format: date-time
+          description: Momento en que M4 recibió el evento.
+    Candidato:
+      type: object
+      additionalProperties: false
+      required:
+        - conductor_id
+        - distancia_origen_km
+        - tipo_vehiculo
+      properties:
+        conductor_id:
+          $ref: '#/components/schemas/Identificador'
+        distancia_origen_km:
+          type: number
+          format: double
+          minimum: 0
+          description: Distancia calculada desde el origen a la posición vigente.
+        eta_retiro_minutos:
+          type: integer
+          minimum: 0
+          description: ETA desde la posición del conductor hasta el origen; puede omitirse si mapas falla.
+        tipo_vehiculo:
+          $ref: '#/components/schemas/TipoVehiculo'
+    ResultadoBusquedaConductores:
+      type: object
+      additionalProperties: false
+      required: [conductores, radio_aplicado_km, generado_en]
+      properties:
+        conductores:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candidato'
+        radio_aplicado_km:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+        generado_en:
+          type: string
+          format: date-time
+    CambioReservaTemporal:
+      type: object
+      additionalProperties: false
+      required: [estado_temporal, solicitud_id]
+      properties:
+        estado_temporal:
+          $ref: '#/components/schemas/EstadoTemporal'
+        solicitud_id:
+          $ref: '#/components/schemas/Identificador'
+    ResultadoReservaTemporal:
+      type: object
+      additionalProperties: false
+      required: [conductor_id, solicitud_id, estado_temporal, actualizado_en]
+      properties:
+        conductor_id:
+          $ref: '#/components/schemas/Identificador'
+        solicitud_id:
+          $ref: '#/components/schemas/Identificador'
+        estado_temporal:
+          $ref: '#/components/schemas/EstadoTemporal'
+        actualizado_en:
+          type: string
+          format: date-time
+        expira_en:
+          type: string
+          format: date-time
+          description: Fecha de expiración del bloqueo si estado_temporal es RESERVADO.
+        idempotente:
+          type: boolean
+          description: Indica que la solicitud ya había aplicado el mismo cambio.
+    EstimacionRuta:
+      type: object
+      additionalProperties: false
+      required:
+        - origen
+        - destino
+        - distancia_estimada_km
+        - eta_minutos
+        - calculado_en
+        - fuente
+      properties:
+        origen:
+          $ref: '#/components/schemas/PuntoGeografico'
+        destino:
+          $ref: '#/components/schemas/PuntoGeografico'
+        distancia_estimada_km:
+          type: number
+          format: double
+          minimum: 0
+        eta_minutos:
+          type: integer
+          minimum: 0
+        calculado_en:
+          type: string
+          format: date-time
+        fuente:
+          type: string
+          enum: [proveedor_mapa, estimacion_local]
+          description: Informa si se usó proveedor externo o fallback local.
+    ConsultaGeocodificacion:
+      type: object
+      additionalProperties: false
+      required: [direccion, pais]
+      properties:
+        direccion:
+          type: string
+          minLength: 1
+          maxLength: 300
+        localidad:
+          type: string
+          maxLength: 120
+        pais:
+          type: string
+          minLength: 2
+          maxLength: 2
+          description: Código de país ISO 3166-1 alfa-2.
+    CoincidenciaGeocodificacion:
+      type: object
+      additionalProperties: false
+      required: [latitud, longitud, etiqueta]
+      properties:
+        latitud:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        longitud:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        etiqueta:
+          type: string
+        confianza:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+    ResultadoGeocodificacion:
+      type: object
+      additionalProperties: false
+      required: [coincidencias]
+      properties:
+        coincidencias:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoincidenciaGeocodificacion'
+    Problema:
+      type: object
+      description: Objeto Problem Details JSON conforme a RFC 7807, como establece el README del repositorio.
+      additionalProperties: true
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: URI que identifica el tipo de problema; usar about:blank si no hay tipo específico.
+        title:
+          type: string
+          description: Resumen estable y legible del tipo de problema.
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+          description: Debe coincidir con el código HTTP de la respuesta.
+        detail:
+          type: string
+          description: Explicación específica, sin secretos ni datos internos.
+        instance:
+          type: string
+          format: uri-reference
+          description: URI que identifica esta ocurrencia; no incluir datos personales.
+        code:
+          type: string
+          description: Código estable de aplicación, por ejemplo CONDUCTOR_RESERVADO.
+        trace_id:
+          type: string
+          description: Correlation ID para logs estructurados y diagnóstico (RNF-14).
+        invalid_params:
+          type: array
+          description: Extensión opcional para errores de validación.
+          items:
+            type: object
+            required: [name, reason]
+            properties:
+              name:
+                type: string
+              reason:
+                type: string
+    ProblemaGenerico:
+      description: >-
+        Error genérico. Usa type=about:blank y un título en español acorde con
+        el código HTTP (por ejemplo, Solicitud inválida, No autenticado o Error
+        interno).
+      allOf:
+        - $ref: '#/components/schemas/Problema'
+        - type: object
+          properties:
+            type:
+              const: about:blank
+    ProblemaDominio:
+      description: Error de dominio con type específico y estable.
+      allOf:
+        - $ref: '#/components/schemas/Problema'
+        - type: object
+          properties:
+            type:
+              not:
+                const: about:blank
+  responses:
+    SolicitudInvalida:
+      description: JSON, parámetro o encabezado inválido (incluye UUID mal formado).
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemaGenerico'
+          example:
+            type: about:blank
+            title: Solicitud inválida
+            status: 400
+            detail: La latitud debe estar entre -90 y 90.
+            instance: /api/v1/ubicaciones
+    NoAutenticado:
+      description: Falta un token válido emitido según el contrato de M1.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemaGenerico'
+    SinPermiso:
+      description: El token es válido pero no autoriza al módulo o actor para esta operación.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemaGenerico'
+    NoEncontrado:
+      description: El conductor o recurso requerido no existe en la proyección de M4.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemaGenerico'
+    Conflicto:
+      description: El estado actual impide la operación; por ejemplo, conductor reservado por otra solicitud.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemaDominio'
+          example:
+            type: /errores/conductor-reservado
+            title: Conductor no disponible para reserva
+            status: 409
+            detail: El conductor ya está reservado por otra solicitud.
+            instance: /api/v1/conductores/018f1f20-7b4a-7cc2-9d41-66382a18cc5a/reserva
+            code: CONDUCTOR_RESERVADO
+    NoProcesable:
+      description: Cuerpo válido pero regla de negocio incumplida o Idempotency-Key reutilizada con otro cuerpo.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemaDominio'
+    LimiteExcedido:
+      description: Límite de solicitudes excedido.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/XRequestId'
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemaGenerico'
+    ErrorInterno:
+      description: Error inesperado de M4; no expone detalles de implementación.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemaGenerico'
+    ServicioNoDisponible:
+      description: M4 no puede atender temporalmente la solicitud.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/XRequestId'
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemaGenerico'
+    DependenciaNoDisponible:
+      description: El proveedor de mapas u otra dependencia necesaria no está disponible.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/XRequestId'
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemaDominio'
+    TiempoAgotado:
+      description: La dependencia no respondió antes del timeout definido.
+      headers:
+        X-Request-Id:
+          $ref: '#/components/headers/XRequestId'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemaDominio'
