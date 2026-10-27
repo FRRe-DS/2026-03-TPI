@@ -19,24 +19,38 @@ services: # palabra reservada que indica que todo lo de abajo identado dentro de
     volumes: #conecta disco con contenedor, si necesito comunicarme buscara la analogia disco:conenedor, esta oculta y no la vemos
       - m4db:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis_m4
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   api: #es el nombre del servicio que se despliega, es mas facil que quede predeterminado
     build: . # le dice donde tiene que buscar el dockerfile, en este caso en el directorio actual
     container_name: fastapi_m4 #nombre visual que tendra dentro de la terminal, es decir, si hacemos docker ps, 
                               #veremos que el contenedor se llama fastapi_m4
     ports: #puertos de acceso compatibles con la version de api, izquierda personalizable, derecha no
       - "8000:8000"
-    depends_on: #orden de encendido/despleigue, si existiera varias db y tienen significados especificos, deben ser secuenciales
-      - m4db #debe ser igual al de la linea 6, es decir, el nombre del servicio de la db, no el nombre del contenedor
+    depends_on:
+      m4db:
+        condition: service_started
+      redis:
+        condition: service_healthy
     volumes:
-      - ./app:/tpim4/app #volumen que conecta el disco con el contenedor, es decir, si modificamos el codigo fuente en el disco, se vera reflejado en el contenedor
-      - ./alembic:/tpim4/alembic            # Sincroniza la carpeta alembic para migraciones
-      - ./alembic.ini:/tpim4/alembic.ini    # Sincroniza el archivo de configuración
-      - ./tests:/tpim4/tests #sincroniza la carpeta de pruebas
+      - ./app:/tpim4/app
+      - ./alembic:/tpim4/alembic
+      - ./alembic.ini:/tpim4/alembic.ini
+      - ./tests:/tpim4/tests
     env_file:
       - .env
     environment:
       # Esta es la ruta estándar que funcionará en la PC de todos
       - DATABASE_URL=postgresql+psycopg2://${DB_USER}:${DB_PASS}@m4db:5432/${DB_NAME}
+      - REDIS_URL=redis://redis:6379/0
 
 volumes: #declaracion de volumenes, es decir, donde se guardara la informacion de la base de datos, para que no se pierda al apagar el contenedor
   m4db: #nombre del volumen que se crea, es el que se ve en la terminal, es el que se ve en docker volume ls

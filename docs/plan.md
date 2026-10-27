@@ -62,7 +62,7 @@ La estructura anterior es el destino modular recomendado, no una afirmación de 
 ### Infraestructura y persistencia
 
 - **PostgreSQL 15 + SQLAlchemy + Alembic:** persistencia relacional del estado operativo requerido entre llamadas, reservas, registro de idempotencia y, si el acuerdo de retención lo permite, datos de auditoría no sensibles.
-- **Proyección GPS efímera:** interfaz de repositorio con expiración estricta. Recomendación para despliegue: Redis con TTL nativo de 30 s; PostgreSQL no debe usarse como archivo histórico de GPS. Redis no forma parte del Compose actual, por lo que su incorporación es una decisión/dependencia que se debe aprobar y probar antes de implementación. Si se decide no incorporarlo, debe diseñarse y verificarse un mecanismo equivalente de expiración/limpieza que jamás exponga ubicaciones vencidas.
+- **Proyección GPS efímera:** `LocationRepository` separa la interfaz del backend. La decisión acordada es Redis, con TTL nativo de 30 s y actualización cronológica atómica; PostgreSQL no debe usarse como archivo histórico de GPS. Compose ejecuta Redis sin persistencia en disco y espera su healthcheck antes de iniciar la API. Si Redis no está disponible, la aplicación no inicia con un adapter GPS falsamente saludable.
 - **Reservas:** PostgreSQL permite transacción y exclusión por conductor; las reservas tienen `expira_en` y toda lectura comprueba vigencia. El vencimiento configurable del contrato se debe acordar y no sustituye la liberación explícita de M5.
 - **Proveedor de mapas:** encapsular geocodificación y rutas detrás de adaptadores para poder simularlos en pruebas. La política de fallback debe distinguir estimación aproximada de resultado del proveedor y reflejar `fuente` según OpenAPI.
 - **Clientes HTTP:** clientes de vida útil de aplicación, timeouts de conexión/lectura configurados y cierre ordenado. No bloquear el event loop; usar cliente asíncrono para dependencias HTTP.
@@ -122,6 +122,8 @@ Clave compuesta por actor/operación y `Idempotency-Key`; almacenar hash canóni
 ### Datos y retención
 
 No usar `RegistroSolicitud` ni las tablas piloto como histórico de coordenadas por defecto. Guardar solo la información necesaria para operación. Definir retención para claves de idempotencia y auditoría; excluir coordenadas, tokens, secretos y query strings de logs. Si un registro necesita ubicación de origen/destino para una operación funcional, documentar finalidad, acceso y expiración específica antes de persistirlo.
+
+La primera capa ORM relacional mantiene únicamente `estado_operativo`, `reservas_temporales` y `registros_idempotencia`. La ubicación GPS permanece en el repositorio efímero previsto en 4.1 y `Candidato` se calcula como DTO; ninguno se materializa como tabla SQL. Los DTOs de respuesta de estado y reserva habilitan `from_attributes` para serializar proyecciones ORM, y los timestamps se normalizan a UTC tanto en PostgreSQL como en SQLite de pruebas. `expira_en` del registro de idempotencia queda nullable mientras se acuerda una política de retención.
 
 ## 5. Contratos HTTP y errores
 

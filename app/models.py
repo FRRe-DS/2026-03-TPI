@@ -1,62 +1,130 @@
-"""
-=============================================
-Este archivo contiene la definición de las tablas de la base de datos, que se definen como clases que heredan de Base. 
-Cada clase representa una tabla y cada atributo de la clase representa una columna en esa tabla junto con sus restricciones 
-de integridad y tipo de dato.
-=============================================
-"""
 import uuid
-from sqlalchemy import Column, Integer, Float, String, DateTime #tipos de datos mas comunes
-from sqlalchemy.dialects.postgresql import UUID #restricciones de tipo mas complejos e incrementales
-from datetime import datetime, timezone#tipo de datos en formato de fecha y hora
-from .database import Base #importante para crear desde 0 la tabla
+from datetime import datetime, timezone
+from typing import Any
 
-'''
-    class Prueba(Base): #todo lo que herede Base, sera una tabla en la base de datos.
-    __tablename__ = "Prueba"
-    #esta clase y tabla sera borrada luego de inicializar tipos mas especificos de entidades, ya que esta clase es solo para inicializar la bd
-    id = Column(UUID(as_uuid=True), primary_key=True, index=True,default=uuid.uuid4, unique=True, nullable=False)
-    #restricciones de integridad de la tabla, para que no se repitan los valores y que no sean nulos.
-'''
-    
-# Tablas
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Integer,
+    String,
+    UniqueConstraint,
+    Uuid,
+)
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import TypeDecorator
 
-#Tabla n° 1: Registro de solicitudes de unicacion conductor
-class RegistroSolicitud(Base):
-    """
-    Tabla de registro histórico o mitigación de solicitudes de viajes.
-    """
-    __tablename__ = "registro_solicitudes"
+from app.database import Base
 
-    solicitud_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    origen_lat = Column(Float, nullable=False) # Float para almacenar coordenadas geográficas. nullable=False para que no se permitan valores nulos.
-    origen_long = Column(Float, nullable=False)
-    destino_lat = Column(Float, nullable=False)
-    destino_long = Column(Float, nullable=False)
-    origen_text = Column(String(255), nullable=False)
-    destino_text = Column(String(255), nullable=False)
-    fecha_solicitud = Column(
-        DateTime(timezone=True), 
-        default=lambda: datetime.now(timezone.utc), #Si al guardar no le pasas fecha, Python tomará automáticamente la fecha y hora actual en tiempo universal coordinado (UTC)
-        nullable=False
+
+class UTCDateTime(TypeDecorator[datetime]):
+    impl = DateTime
+    cache_ok = True
+
+    def __init__(self) -> None:
+        super().__init__(timezone=True)
+
+    def process_bind_param(
+        self, value: datetime | None, _dialect: Any
+    ) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("Los timestamps persistidos deben incluir zona horaria.")
+        return value.astimezone(timezone.utc)
+
+    def process_result_value(
+        self, value: datetime | None, _dialect: Any
+    ) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None or value.utcoffset() is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
+
+
+class EstadoOperativoORM(Base):
+    __tablename__ = "estado_operativo"
+    __table_args__ = (
+        CheckConstraint(
+            "connected = true OR available = false",
+            name="ck_estado_operativo_available_requires_connection",
+        ),
     )
 
-#TAbla n° 2: Posición y estado de conductores en tiempo real
-class ConductorTiempoReal(Base):
-    """
-    Tabla de posición y estado de conductores en tiempo real.
-    """
-    __tablename__ = "conductor_tiempo_real"
-
-    conductor_id = Column(Integer, primary_key=True, index=True) # A diferencia de la tabla anterior, no tiene autoincrement=True porque el ID del conductor seguramente vendrá asignado desde otro módulo (por ejemplo, el módulo de usuarios/conductores)
-    latitud = Column(Float, nullable=False)
-    longitud = Column(Float, nullable=False)
-    tipo_vehiculo = Column(String(50), nullable=False)
-    ultima_actualizacion = Column(
-        DateTime(timezone=True), 
-        default=lambda: datetime.now(timezone.utc), #Asigna la fecha/hora actual cuando el conductor se registra por primera vez.
-        onupdate=lambda: datetime.now(timezone.utc), #Muy importante: cada vez que modifiques la fila (por ejemplo, cuando el conductor cambie de latitud/longitud), este campo se actualizará automáticamente con la hora actual sin que tengas que cambiarlo a mano.
-        nullable=False #No puede ser nulo
+    conductor_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True
+    )
+    event_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), unique=True, nullable=True
+    )
+    connected: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    available: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    actualizado_en: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    recibido_en: Mapped[datetime] = mapped_column(
+        UTCDateTime(), nullable=False, default=lambda: datetime.now(timezone.utc)
     )
 
 
+class ReservaTemporalORM(Base):
+    __tablename__ = "reservas_temporales"
+    __table_args__ = (
+        CheckConstraint(
+            "estado_temporal IN ('RESERVADO', 'LIBERADO')",
+            name="ck_reserva_estado_temporal",
+        ),
+        CheckConstraint(
+            "estado_temporal != 'RESERVADO' OR expira_en IS NOT NULL",
+            name="ck_reserva_activa_requiere_expiracion",
+        ),
+    )
+
+    conductor_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True
+    )
+    solicitud_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    estado_temporal: Mapped[str] = mapped_column(String(16), nullable=False)
+    creada_en: Mapped[datetime] = mapped_column(
+        UTCDateTime(), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+    actualizado_en: Mapped[datetime] = mapped_column(
+        UTCDateTime(),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+    expira_en: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class RegistroIdempotenciaORM(Base):
+    __tablename__ = "registros_idempotencia"
+    __table_args__ = (
+        UniqueConstraint(
+            "actor_id",
+            "operacion",
+            "idempotency_key",
+            name="uq_idempotencia_actor_operacion_key",
+        ),
+        CheckConstraint(
+            "length(body_hash) = 64", name="ck_idempotencia_hash_sha256"
+        ),
+        CheckConstraint(
+            "response_status BETWEEN 100 AND 599",
+            name="ck_idempotencia_response_status",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    actor_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    operacion: Mapped[str] = mapped_column(String(100), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    body_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    response_status: Mapped[int] = mapped_column(Integer, nullable=False)
+    response_body: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    creado_en: Mapped[datetime] = mapped_column(
+        UTCDateTime(), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+    expira_en: Mapped[datetime | None] = mapped_column(UTCDateTime())

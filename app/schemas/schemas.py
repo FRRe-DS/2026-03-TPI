@@ -82,7 +82,7 @@ class EstadoOperativoRegistrado(BaseModel):
     actualizado_en: datetime | None = None
     recibido_en: datetime
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
 
     @field_validator("actualizado_en", "recibido_en")
     @classmethod
@@ -133,7 +133,7 @@ class ResultadoReservaTemporal(BaseModel):
     expira_en: datetime | None = None
     idempotente: bool | None = None
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
 
     @field_validator("actualizado_en", "expira_en")
     @classmethod

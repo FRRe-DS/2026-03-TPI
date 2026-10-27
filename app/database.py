@@ -1,34 +1,40 @@
-"""
-===================================================
-Este archivo contiene la configuración de la base de datos y la creación del motor de conexión a Postgres
-así como la definición de la clase Base para declarar las tablas (modelos) y la función get_db() 
-para inyectar dependencias en los endpoints de FastAPI.
-Si fuera necesario, aqui tambien se redefinirian las configuraciones de pool de coneccion como ser la cantidad maxima 
-de conecciones, el tiempo de espera, etc. Sus valores predeterminados nos serviran por el momento
-===================================================
-"""
+from collections.abc import Generator
+from typing import Any
 
-import os
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-#Capturamos la URL que inyectó Docker desde el archivo .env
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+from app.core.config import get_settings
 
-#Creamos el motor (engine) que establece el canal de comunicación con Postgres
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
-#Fábrica de sesiones temporales para realizar transacciones
-#es algo asi como un secretario de pools de conectividad sobre la bd, pero que no realiza conecciones hasta que la 
-#obligamos a realizar una, se podira decir que con esto, se "prepara" pero no la conecta.
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+class Base(DeclarativeBase):
+    pass
 
-#Clase base para declarar las futuras tablas (modelos)
-Base = declarative_base()
 
-#Función de inyección de dependencias para los endpoints
-def get_db():
+def _create_engine(database_url: str) -> Engine:
+    engine_options: dict[str, Any] = {"pool_pre_ping": True}
+    if database_url.startswith("sqlite"):
+        engine_options["connect_args"] = {"check_same_thread": False}
+    return create_engine(database_url, **engine_options)
+
+
+SQLALCHEMY_DATABASE_URL = get_settings().database_url
+engine = _create_engine(SQLALCHEMY_DATABASE_URL) if SQLALCHEMY_DATABASE_URL else None
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+    expire_on_commit=False,
+)
+
+
+def get_db() -> Generator[Session, None, None]:
+    if engine is None:
+        raise RuntimeError(
+            "DATABASE_URL debe configurarse antes de abrir una sesión de base de datos."
+        )
+
     db = SessionLocal()
     try:
         yield db

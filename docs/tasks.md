@@ -8,7 +8,8 @@ Este backlog desglosa la arquitectura de [plan.md](./plan.md) en unidades de imp
 - [ ] **20 min — Acordar TTL, radio y reserva con M5.** Resolver TTL fijo de GPS (30 s), default/expansión del radio, TTL de reserva y eventos que causan liberación. **Prueba/criterio:** casos límite y valores aprobados reflejados en configuración/contrato.
 - [ ] **20 min — Acordar integración asíncrona con M7.** Elegir push/outbox o consulta pull, identificador correlacionado, reintentos y deduplicación; no asumir que el GET actual satisface el push de la constitución. **Prueba/criterio:** contrato de integración revisado y trazable a OpenAPI actualizado/aprobado.
 - [ ] **20 min — Definir proveedor de mapas y fallback.** Seleccionar geocoder/router, límites, formato, fuente de ETA, timeout y fallback local permitido. **Prueba/criterio:** escenarios de éxito, ambigüedad, timeout y no disponibilidad definidos.
-- [ ] **20 min — Aprobar almacén efímero y cobertura geográfica.** Decidir Redis u opción equivalente para GPS TTL y acordar geometría autorizada Chaco/Corrientes. **Prueba/criterio:** decisión de infraestructura y fixtures geográficos con límites aprobados.
+- [x] **20 min — Aprobar almacén efímero GPS.** Seleccionar Redis con expiración nativa de 30 s para el despliegue. **Criterio:** decisión acordada e integrada en Compose.
+- [ ] **20 min — Aprobar cobertura geográfica.** Acordar geometría autorizada Chaco/Corrientes. **Prueba/criterio:** fixtures geográficos con límites aprobados.
 
 ## 1. Fundamentos de aplicación y contratos
 
@@ -23,13 +24,13 @@ Este backlog desglosa la arquitectura de [plan.md](./plan.md) en unidades de imp
 
 ## 2. Persistencia y repositorios
 
-- [ ] **25 min — Diseñar modelos SQLAlchemy persistentes de estado operativo.** Crear tabla/proyección con UUID, connected/available y timestamps sin guardar GPS. **PyTest:** constraints, defaults UTC y serialización.
-- [ ] **25 min — Diseñar modelo de reserva temporal.** Añadir titular, estado, marcas de tiempo y expiración con índice/restricción para reserva activa única. **PyTest:** migración de ida/vuelta y restricción de unicidad.
-- [ ] **25 min — Diseñar almacenamiento de idempotencia.** Persistir operación, actor, key, hash, status/respuesta y vencimiento con clave única. **PyTest:** duplicado de key y comportamiento de transacción.
-- [ ] **25 min — Crear migración Alembic de las tablas nuevas.** No modificar destructivamente las migraciones existentes; documentar incompatibilidad de identificadores legacy. **PyTest:** upgrade/downgrade en DB de prueba.
-- [ ] **25 min — Definir interfaz de repositorio efímero de ubicación.** Separar interfaz de servicio del backend; soportar upsert condicional, consulta vigente y expiración. **PyTest:** repositorio fake verifica semántica sin Redis/DB externa.
-- [ ] **25 min — Implementar backend efímero elegido.** Conectar el adapter acordado y aplicar expiración de 30 s; si se elige Redis, sumar health/configuración de Compose en tarea de infraestructura independiente. **PyTest:** ubicación desaparece o deja de estar vigente al vencer TTL.
-- [ ] **25 min — Implementar repositorio operacional y transaccional.** Encapsular lecturas/escrituras y rollback, sin operaciones ORM dentro de routers. **PyTest:** persistencia y rollback ante excepción.
+- [x] **25 min — Diseñar modelos SQLAlchemy persistentes de estado operativo.** Crear tabla/proyección con UUID, connected/available y timestamps sin guardar GPS. **PyTest:** constraints, defaults UTC y serialización.
+- [x] **25 min — Diseñar modelo de reserva temporal.** Añadir titular, estado, marcas de tiempo y expiración con índice/restricción para reserva activa única. **PyTest:** migración de ida/vuelta y restricción de unicidad.
+- [x] **25 min — Diseñar almacenamiento de idempotencia.** Persistir operación, actor, key, hash, status/respuesta y vencimiento con clave única. **PyTest:** duplicado de key y comportamiento de transacción.
+- [x] **25 min — Crear migración Alembic de las tablas nuevas.** No modificar destructivamente las migraciones existentes; documentar incompatibilidad de identificadores legacy. **PyTest:** upgrade/downgrade en DB de prueba.
+- [x] **25 min — Definir interfaz de repositorio efímero de ubicación.** Separar interfaz de servicio del backend; soportar upsert condicional, consulta vigente y expiración. **PyTest:** integración Redis verifica interfaz y semántica de vigencia.
+- [x] **25 min — Implementar backend efímero elegido (Redis).** Conectar el adapter acordado, añadir servicio Redis saludable en Compose y aplicar expiración nativa de 30 s. **PyTest:** ubicación desaparece o deja de estar vigente al vencer TTL; orden cronológico e idempotencia atómicos.
+- [x] **25 min — Implementar repositorio operacional y transaccional.** Encapsular lecturas/escrituras y rollback, sin operaciones ORM dentro de routers. **PyTest:** persistencia y rollback ante excepción.
 
 ## 3. Ubicación y disponibilidad
 

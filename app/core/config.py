@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
     app_name: str = "M4 - Ubicación y Disponibilidad"
     database_url: str | None = None
+    redis_url: str | None = None
     location_ttl_seconds: int = Field(default=30, ge=30, le=30)
     reservation_ttl_seconds: PositiveInt | None = None
     default_search_radius_km: PositiveFloat = 5.0

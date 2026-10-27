@@ -1,8 +1,11 @@
 import os
 from logging.config import fileConfig
+from typing import Any
+
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
-from app.models import Base
+from app.core.config import get_settings
+from app.models import Base, UTCDateTime
 from alembic import context
 
 
@@ -15,16 +18,23 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-database_url = os.getenv("DATABASE_URL")
+database_url = get_settings().database_url or os.getenv("DATABASE_URL")
 if database_url:
-    # Sobrescribe dinámicamente la URL en Alembic con la variable de entorno segura
     config.set_main_option("sqlalchemy.url", database_url)
+else:
+    raise RuntimeError("DATABASE_URL debe configurarse para ejecutar Alembic.")
 
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
+
+
+def render_item(type_: str, obj: object, _autogen_context: Any) -> str | bool:
+    if type_ == "type" and isinstance(obj, UTCDateTime):
+        return "sa.DateTime(timezone=True)"
+    return False
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -50,6 +60,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        render_item=render_item,
     )
 
     with context.begin_transaction():
@@ -71,7 +82,9 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            render_item=render_item,
         )
 
         with context.begin_transaction():
