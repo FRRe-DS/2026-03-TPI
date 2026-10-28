@@ -9,12 +9,12 @@ Y codigo autoejecutable segun decoradores, los cuales responden a los endpoints 
 """
 from .database import engine, Base #se importan para crear las tablas en la base de datos, y para poder realizar consultas a la bd
 from . import models #se importa models para que se ejecute el codigo de models.py y se creen las tablas en la base de datos
-from fastapi import FastAPI, Request
-from app.enrutador.eventos import prueba #importamos los eventos sobre el el codigo fuente, para que "reconosca" lo segregado en el otro .py
+from fastapi import FastAPI, Request, APIRouter, HTTPException
 import logging
 import uuid
-
-
+from app.schemas.schemas import ConsultaGeocodificacion,ResultadoGeocodificacion
+from .handlerManager import registrar_manejadores_excepciones
+from app.servicios.geocodificacion import obtener_coordenadas
 
 Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya existia, no hace nada. 
 #Esto es para inicializar la base de datos y crear las tablas que se definan en models.py que hereden de Base.
@@ -26,15 +26,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger("m4_backend")
 
-
-
 # Instanciamos la aplicación principal de FastAPI
 app = FastAPI(
     title="M4 - Ubicación y Disponibilidad",
     description="API encargada del rastreo de entidades",
     version="1.0.0"
 )
-
+#vinculamos los handlers de errores y excepciones personalizados
+registrar_manejadores_excepciones(app)
 #usamos el middleware para lograr respetar el string necesario en el head que documenta el contrato
 @app.middleware("http")
 async def agregar_o_respetar_request_id(request: Request, call_next):
@@ -63,13 +62,16 @@ el codigo, si algo saliera mal no haria falta buscar tanto codigo o como premisa
 cumplir su responsabilidad asociada.
 
 '''
+ruta1 = APIRouter(prefix="/api/v1",tags=["Ubicaciones"])
+ruta2 = APIRouter(prefix="/api/v1",tags=["Geocodificacion"])
+ruta3 = APIRouter(prefix="/api/v1",tags=["Rutas"])
+ruta4 = APIRouter(prefix="/api/v1",tags=["Disponibilidad"])
+ruta5 = APIRouter(prefix="/health/",tags=["Salud"])
 
-app.include_router(prueba, prefix="/PruebaM4") #aseguramos que el prefijo tanbien llegue aqui
+@ruta2.post("/geocodificaciones",response_model=ResultadoGeocodificacion,status_code=200,description="Consulta realizada; coincidencias puede ser una lista vacía.")
+def RealizarGeocodificacion(datos:ConsultaGeocodificacion):
+    #si regla de negocio dictara solo argentina entonces aqui va la validacion y si da error es 422
+    resultado=obtener_coordenadas(datos)
+    return resultado
 
-# Endpoint raíz para verificar que la API está viva, luego de implementar separacion de responsabilidades en el codigo, es prescindible
-@app.get("/") #si viene "/" en el navegador, le aplicara app.get y el codigo debajo
-def read_Home():
-    return {
-        "estado": "activo",
-        "mensaje": "M4 corriendo correctamente en Docker"
-    }
+
