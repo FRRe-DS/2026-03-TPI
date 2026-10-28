@@ -24,6 +24,7 @@ _SENSITIVE_QUERY = re.compile(
 )
 _BEARER_TOKEN = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/-]+=*")
 _URL_CREDENTIALS = re.compile(r"(?i)(://)[^/@\s:]+:[^/@\s]+@")
+_ABSOLUTE_URL = re.compile(r"(?i)\bhttps?://[^\s\"'<>]+")
 _COORDINATE_ASSIGNMENT = re.compile(
     r"(?i)\b((?:(?:origen|destino)[_-])?"
     r"(?:lat(?:itude|itud)?|lon(?:gitude|gitud)?|lng))"
@@ -58,6 +59,7 @@ _STANDARD_RECORD_KEYS = set(logging.makeLogRecord({}).__dict__)
 
 
 def sanitize_text(value: str) -> str:
+    value = _ABSOLUTE_URL.sub("[URL REDACTED]", value)
     value = _URL_CREDENTIALS.sub(r"\1[REDACTED]@", value)
     value = _SENSITIVE_QUERY.sub(r"\1" + _SENSITIVE_VALUE, value)
     value = _BEARER_TOKEN.sub("Bearer " + _SENSITIVE_VALUE, value)
@@ -140,7 +142,12 @@ def configure_logging() -> None:
         root_logger.setLevel(logging.INFO)
 
     formatter = StructuredJsonFormatter()
-    for handler in root_logger.handlers:
+    log_filter = RedactingLogFilter()
+    access_logger = logging.getLogger("uvicorn.access")
+    if not any(isinstance(item, RedactingLogFilter) for item in access_logger.filters):
+        access_logger.addFilter(log_filter)
+
+    for handler in root_logger.handlers + access_logger.handlers:
         if not any(isinstance(item, RedactingLogFilter) for item in handler.filters):
-            handler.addFilter(RedactingLogFilter())
+            handler.addFilter(log_filter)
         handler.setFormatter(formatter)

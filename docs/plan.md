@@ -61,6 +61,10 @@ La implementación HTTP actual conserva el paquete existente `app/enrutador/` y 
 
 La autenticación de solicitudes con credenciales HTTP delega en el adaptador `app.state.token_authenticator`, que debe validar identidad y autorización de la operación con M1. Como ese acuerdo/adapter aún no existe, la API falla cerrada: credenciales ausentes producen `401` y una credencial recibida sin verificador configurado produce `503`. De modo análogo, rutas no fabrican distancias: `GET /api/v1/rutas/estimacion` necesita un estimador configurado y responde `503` si no está disponible. `RESERVATION_TTL_SECONDS` debe configurarse conforme al acuerdo con M5; no se reutiliza el TTL de GPS.
 
+El cliente M3 en `app/clients/m3.py` usa credencial Bearer de servicio, timeouts finitos y propaga el `X-Request-Id` del contexto. `M3_BASE_URL`, `M3_SERVICE_TOKEN` y `M3_ELIGIBILITY_PATH` se configuran juntos; la ruta debe incluir `{conductor_id}` y se deja configurable porque su forma pertenece al OpenAPI de M3. El lifespan crea y cierra el cliente. El mapeo sigue `ElegibilidadDesdeM3` del OpenAPI de M4, exige ambos campos, rechaza enums desconocidos y propiedades extra, y nunca convierte fallos de M3 en una lista vacía.
+
+La proximidad usa distancia Haversine en línea recta, aplica el radio y el límite configurados y ordena por distancia e ID de conductor. El área se carga mediante `COVERAGE_GEOJSON` como `Polygon` o `MultiPolygon`; origen y ubicación candidata deben estar cubiertos. Si no se configura geometría, el servicio falla cerrado con `503`. Los GeoJSON sintéticos de pruebas verifican el algoritmo y no constituyen aprobación de la cobertura real de Chaco/Corrientes; esa geometría continúa pendiente en los acuerdos de preparación y debe aprobarse antes de habilitar búsqueda en producción.
+
 ### Infraestructura y persistencia
 
 - **PostgreSQL 15 + SQLAlchemy + Alembic:** persistencia relacional del estado operativo requerido entre llamadas, reservas, registro de idempotencia y, si el acuerdo de retención lo permite, datos de auditoría no sensibles.
@@ -176,7 +180,7 @@ Mapeo de errores a acordar con los casos del OpenAPI: validación estructural `4
 4. Consultar M3 solo para el conjunto candidato necesario (no pedir listado completo): habilitación vigente `APPROVED` y vehículo compatible, junto con estado conectado/disponible según contrato de M3.
 5. Si M3 falla, devolver error de dependencia (`503` o `504`) sin candidatos; nunca aplicar fallback abierto.
 6. Calcular distancia lineal y filtrar por radio (el OpenAPI usa valor por defecto 5 km y permite parámetros; la constitución/spec hablan de radio fijo de 5 km). Ordenar/priorizar y limitar.
-7. Calcular ETA al origen con proveedor de mapas. `eta_retiro_minutos` puede omitirse cuando el proveedor falla, como permite el schema, siempre que la política de degradación se acuerde; la caída de M3 nunca se degrada.
+7. Calcular ETA al origen con proveedor de mapas. `eta_retiro_minutos` puede omitirse ante timeout o indisponibilidad del proveedor de mapas cuando `PROXIMITY_ETA_DEGRADATION_ENABLED=true` (predeterminado, conforme al OpenAPI). Si se deshabilita la degradación, el error de mapas se propaga como `503`/`504`; los errores de M3 siempre se propagan sin candidatos.
 8. Responder `200`, incluso lista vacía, con `Cache-Control: no-store` y solamente los campos de `Candidato`. Nunca incluir coordenadas GPS del conductor.
 
 ### 6.4 Reserva y liberación desde M5
@@ -203,7 +207,7 @@ El endpoint GET y el límite inyectable del estimador están publicados; la impl
 
 | Módulo | Interacción desde M4 | Garantía/decisión |
 |---|---|---|
-| M3 | Recibe eventos puntuales de intención; consulta elegibilidad/habilitación/tipo de vehículo al filtrar | M4 no posee maestro ni GPS de M3. Definir ruta, payload, identidad, orden de eventos y semántica del estado antes de implementar. Timeout y fail-closed obligatorios |
+| M3 | Recibe eventos puntuales de intención; consulta elegibilidad/habilitación/tipo de vehículo al filtrar | Cliente HTTP asíncrono con token Bearer de servicio, timeout, correlación y respuesta validada. Ruta desplegada se configura hasta que conste en el contrato de M3. Timeout/fallo/respuesta incompleta producen error fail-closed |
 | M5 | Consume candidatos/ETA; ordena/despacha ofertas; reserva y libera conductor | M4 no reserva al listar. La reserva atómica es autoridad final. Privacidad de coordenadas absoluta |
 | M7 | Consume distancia y ETA asociados a la solicitud para tarifación | Definir si será push asíncrono/outbox o consulta por endpoint; no confundir ambas direcciones del OpenAPI vigente |
 | M9 | Consume viabilidad geográfica y estimación para reservas de viaje | M4 verifica origen/destino dentro del área permitida y responde métrica; M9 conserva la reserva de viaje |

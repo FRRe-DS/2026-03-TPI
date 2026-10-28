@@ -13,6 +13,8 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.auth import AuthenticatedPrincipal, get_authenticated_principal
 from app.core.config import Settings
+from app.core.errors import M3UnavailableError
+from app.clients.m3 import ElegibilidadConductor, EstadoHabilitacionM3
 from app.database import Base, SessionLocal, engine as database_engine, get_db
 from app.main import create_app
 from app.models import (
@@ -25,7 +27,14 @@ from app.repositories.locations import (
     LocationWriteResult,
     StoredLocation,
 )
-from app.schemas.schemas import ActualizarUbicacion
+from app.schemas.schemas import (
+    ActualizarUbicacion,
+    EstimacionRuta,
+    FuenteEstimacion,
+    PuntoGeografico,
+    TipoVehiculo,
+)
+from app.servicios.coverage import CoverageArea
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 
@@ -62,6 +71,33 @@ class MemoryLocationRepository:
 
     async def get_current(self, conductor_id: UUID) -> StoredLocation | None:
         return self.locations.get(conductor_id)
+
+
+class NearbyM3Client:
+    def __init__(
+        self,
+        eligibility: dict[UUID, ElegibilidadConductor] | None = None,
+        error: Exception | None = None,
+    ) -> None:
+        self.eligibility = eligibility or {}
+        self.error = error
+        self.calls: list[UUID] = []
+
+    async def get_eligibility(self, conductor_id: UUID) -> ElegibilidadConductor:
+        self.calls.append(conductor_id)
+        if self.error is not None:
+            raise self.error
+        return self.eligibility[conductor_id]
+
+
+def configure_nearby(application: FastAPI) -> MemoryLocationRepository:
+    repository = MemoryLocationRepository()
+    application.dependency_overrides[get_location_repository] = lambda: repository
+    application.state.coverage = CoverageArea.from_geojson(
+        '{"type":"Polygon","coordinates":'
+        '[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}'
+    )
+    return repository
 
 
 @pytest.fixture
@@ -449,6 +485,162 @@ def test_route_estimation_uses_injected_provider_and_maps_timeout(
     failed = client.get(f"/api/v1/rutas/estimacion?{query}")
     assert failed.status_code == 503
     assert "private map provider detail" not in failed.text
+
+
+def test_nearby_endpoint_returns_eta_without_driver_coordinates(
+    api: tuple[TestClient, FastAPI],
+) -> None:
+    client, application = api
+    driver_id = uuid4()
+    location_repository = configure_nearby(application)
+    now = application.state.clock()
+    driver_latitude, driver_longitude = 0.5, 0.51
+    location_repository.locations[driver_id] = StoredLocation(
+        conductor_id=driver_id,
+        latitud=driver_latitude,
+        longitud=driver_longitude,
+        timestamp_ubicacion=now,
+        recibida_en=now,
+        expira_en=now + timedelta(seconds=30),
+    )
+    with Session(application.state.test_engine) as session:
+        session.add(
+            EstadoOperativoORM(
+                conductor_id=driver_id,
+                connected=True,
+                available=True,
+                actualizado_en=now,
+            )
+        )
+        session.commit()
+    application.state.m3_client = NearbyM3Client(
+        {
+            driver_id: ElegibilidadConductor(
+                estado_habilitacion=EstadoHabilitacionM3.APPROVED,
+                tipos_vehiculo_habilitados=(TipoVehiculo.AUTO,),
+            )
+        }
+    )
+    route_calls: list[tuple[PuntoGeografico, PuntoGeografico]] = []
+
+    async def estimator(origin, destination, vehicle):
+        route_calls.append((origin, destination))
+        assert vehicle is TipoVehiculo.AUTO
+        return EstimacionRuta(
+            origen=origin,
+            destino=destination,
+            distancia_estimada_km=1.2,
+            eta_minutos=4,
+            calculado_en=now,
+            fuente=FuenteEstimacion.PROVEEDOR_MAPA,
+        )
+
+    application.state.route_estimator = estimator
+    response = client.get(
+        "/api/v1/conductores/cercanos?"
+        "origen_latitud=0.5&origen_longitud=0.5&tipo_vehiculo=AUTO"
+    )
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert response.json()["radio_aplicado_km"] == 5
+    candidate = response.json()["conductores"][0]
+    assert candidate["conductor_id"] == str(driver_id)
+    assert candidate["eta_retiro_minutos"] == 4
+    assert "latitud" not in candidate
+    assert "longitud" not in candidate
+    assert str(driver_latitude) not in response.text
+    assert str(driver_longitude) not in response.text
+    assert route_calls == [
+        (
+            PuntoGeografico(latitud=driver_latitude, longitud=driver_longitude),
+            PuntoGeografico(latitud=0.5, longitud=0.5),
+        )
+    ]
+
+
+def test_nearby_endpoint_returns_empty_list_and_privacy_header(
+    api: tuple[TestClient, FastAPI],
+) -> None:
+    client, application = api
+    configure_nearby(application)
+    application.state.m3_client = NearbyM3Client()
+
+    response = client.get(
+        "/api/v1/conductores/cercanos?"
+        "origen_latitud=0.5&origen_longitud=0.5&tipo_vehiculo=AUTO"
+    )
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert response.json()["conductores"] == []
+    assert response.json()["radio_aplicado_km"] == 5
+
+
+def test_nearby_endpoint_validates_search_radius_and_limit(
+    api: tuple[TestClient, FastAPI],
+) -> None:
+    client, application = api
+    configure_nearby(application)
+    application.state.m3_client = NearbyM3Client()
+    base_query = (
+        "origen_latitud=0.5&origen_longitud=0.5&tipo_vehiculo=AUTO"
+    )
+
+    for extra_query in (
+        "radio_km=0",
+        "radio_km=21",
+        "radio_maximo_km=4",
+        "radio_maximo_km=21",
+        "limite=0",
+        "limite=101",
+    ):
+        response = client.get(
+            f"/api/v1/conductores/cercanos?{base_query}&{extra_query}"
+        )
+        assert response.status_code == 422, extra_query
+        assert response.headers["cache-control"] == "no-store"
+
+
+def test_nearby_endpoint_propagates_m3_failure_even_when_eta_can_degrade(
+    api: tuple[TestClient, FastAPI],
+) -> None:
+    client, application = api
+    driver_id = uuid4()
+    location_repository = configure_nearby(application)
+    now = application.state.clock()
+    location_repository.locations[driver_id] = StoredLocation(
+        conductor_id=driver_id,
+        latitud=0.5,
+        longitud=0.51,
+        timestamp_ubicacion=now,
+        recibida_en=now,
+        expira_en=now + timedelta(seconds=30),
+    )
+    with Session(application.state.test_engine) as session:
+        session.add(
+            EstadoOperativoORM(
+                conductor_id=driver_id,
+                connected=True,
+                available=True,
+                actualizado_en=now,
+            )
+        )
+        session.commit()
+    application.state.m3_client = NearbyM3Client(error=M3UnavailableError())
+
+    async def timed_out_estimator(*_):
+        raise TimeoutError
+
+    application.state.route_estimator = timed_out_estimator
+    response = client.get(
+        "/api/v1/conductores/cercanos?"
+        "origen_latitud=0.5&origen_longitud=0.5&tipo_vehiculo=AUTO"
+    )
+
+    assert response.status_code == 503
+    assert response.headers["cache-control"] == "no-store"
+    assert response.json()["code"] == "M3_UNAVAILABLE"
 
 
 def test_missing_bearer_token_is_rejected_with_problem_details(

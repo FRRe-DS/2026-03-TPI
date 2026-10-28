@@ -29,7 +29,7 @@ def test_sanitize_text_redacts_credentials_query_values_and_gps() -> None:
     assert "-58.986543" not in sanitized
     assert "-34.6037" not in sanitized
     assert "-58.4333" not in sanitized
-    assert "mode=driving" in sanitized
+    assert "[URL REDACTED]" in sanitized
 
 
 def test_sanitize_text_redacts_runtime_bearer_value() -> None:
@@ -49,7 +49,7 @@ def test_sanitize_text_redacts_credentials_embedded_in_url() -> None:
     sanitized = sanitize_text(message)
 
     assert credential not in sanitized
-    assert "[REDACTED]@" in sanitized
+    assert "[URL REDACTED]" in sanitized
 
 
 def test_redacting_filter_sanitizes_structured_fields_and_adds_correlation() -> None:
@@ -128,13 +128,45 @@ def test_request_logs_are_structured_redacted_and_correlated(
     ):
         assert sensitive_value not in output
     assert request_id in output
-    assert "profile=car" in output
+    assert "https://maps.example/route" not in output
+    assert "[URL REDACTED]" in output
     json_log = next(
         line
         for line in output.splitlines()
         if '"logger":"app.test_observability"' in line
     )
     assert json.loads(json_log)["request_id"] == request_id
+
+
+def test_access_log_filter_redacts_full_url_and_coordinate_request_target() -> None:
+    log_filter = RedactingLogFilter()
+    record = logging.LogRecord(
+        "uvicorn.access",
+        logging.INFO,
+        __file__,
+        1,
+        '%s - "%s %s HTTP/%s" %d',
+        (
+            "127.0.0.1",
+            "GET",
+            "/api/v1/conductores/cercanos?origen_latitud=-34.6037"
+            "&origen_longitud=-58.3816",
+            "1.1",
+            200,
+        ),
+        None,
+    )
+
+    assert log_filter.filter(record)
+
+    output = record.getMessage()
+    assert "-34.6037" not in output
+    assert "-58.3816" not in output
+    sanitized_url = sanitize_text(
+        "https://maps.example/private?latitud=-34.6037"
+    )
+    assert "https://maps.example/private?latitud=-34.6037" not in sanitized_url
+    assert "[URL REDACTED]" in sanitized_url
 
 
 def test_structured_formatter_emits_json_with_request_id() -> None:

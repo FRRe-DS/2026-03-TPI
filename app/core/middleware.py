@@ -14,6 +14,7 @@ ASGIApp = Callable[
 
 REQUEST_ID_HEADER = "X-Request-Id"
 REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
+PROXIMITY_PATH = "/api/v1/conductores/cercanos"
 
 
 class RequestIdMiddleware:
@@ -37,7 +38,10 @@ class RequestIdMiddleware:
 
         async def send_with_request_id(message: dict[str, Any]) -> None:
             if message["type"] == "http.response.start":
-                MutableHeaders(scope=message)[REQUEST_ID_HEADER] = request_id
+                headers = MutableHeaders(scope=message)
+                headers[REQUEST_ID_HEADER] = request_id
+                if scope.get("path") == PROXIMITY_PATH:
+                    headers["Cache-Control"] = "no-store"
             await send(message)
 
         try:

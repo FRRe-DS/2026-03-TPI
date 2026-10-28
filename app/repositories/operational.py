@@ -26,6 +26,17 @@ class SqlAlchemyOperationalRepository:
     def get_state(self, conductor_id: UUID) -> EstadoOperativoORM | None:
         return self._session.get(EstadoOperativoORM, conductor_id)
 
+    def list_available_states(self) -> list[EstadoOperativoORM]:
+        statement = (
+            select(EstadoOperativoORM)
+            .where(
+                EstadoOperativoORM.connected.is_(True),
+                EstadoOperativoORM.available.is_(True),
+            )
+            .order_by(EstadoOperativoORM.conductor_id)
+        )
+        return list(self._session.scalars(statement))
+
     def save_state(self, state: EstadoOperativoORM) -> EstadoOperativoORM:
         stored = self._session.merge(state)
         self._session.flush()

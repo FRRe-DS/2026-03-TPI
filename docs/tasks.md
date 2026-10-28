@@ -47,15 +47,15 @@ Este backlog desglosa la arquitectura de [plan.md](./plan.md) en unidades de imp
 
 ## 4. Integración M3 y proximidad M5
 
-- [ ] **25 min — Crear cliente HTTP asíncrono de M3.** Aplicar auth de servicio, timeouts finitos, propagación de request ID y cierre en lifespan. **PyTest:** transporte simulado, timeout, respuesta inválida y cierre.
-- [ ] **25 min — Mapear respuesta de elegibilidad de M3.** Convertir el contrato acordado a tipos internos sin asumir campos ausentes ni solicitar listados completos. **PyTest:** habilitación `APPROVED`, estados no elegibles, vehículo y respuesta incompleta.
-- [ ] **25 min — Implementar regla fail-closed de M3.** Convertir timeout/fallo/no respuesta a error explícito; asegurar lista de candidatos vacía no se confunde con error de dependencia. **PyTest:** ningún candidato se devuelve si M3 no valida.
-- [ ] **25 min — Implementar cálculo de distancia lineal y orden.** Calcular distancia origen-conductor, aplicar radio/límite y ordenar determinísticamente. **PyTest:** distancias conocidas, borde del radio y límite.
-- [ ] **25 min — Implementar servicio de cobertura geográfica.** Validar punto en zona aprobada mediante geometría acordada, no asumir que el rectángulo piloto es definitivo. **PyTest:** punto interior, borde y exterior para Chaco/Corrientes.
-- [ ] **25 min — Implementar filtro de candidatos completo.** Combinar ubicación vigente, estado, reserva, tipo de vehículo, M3 y cobertura. **PyTest:** un caso por condición de exclusión y candidato válido.
-- [ ] **25 min — Añadir ETA de retiro a candidatos.** Consultar router para origen/conductor sin exponer posiciones; permitir omisión solo ante fallo según política. **PyTest:** ETA obtenido, degradación aprobada y falla M3 no degradable.
-- [ ] **25 min — Publicar `GET /api/v1/conductores/cercanos`.** Validar parámetros, aplicar default y límites acordados y retornar contrato sin GPS. **PyTest:** respuesta vacía, candidato válido, radio/límite y ausencia de latitud/longitud.
-- [ ] **25 min — Añadir protección de privacidad al endpoint de proximidad.** Aplicar `Cache-Control: no-store` y verificar sanitización de access logs/traces. **PyTest:** headers y logs sin coordenadas ni URL completa.
+- [x] **25 min — Crear cliente HTTP asíncrono de M3.** Aplicar bearer de servicio, timeouts finitos, propagación de request ID y cierre en lifespan. La ruta concreta queda como configuración requerida, pues pertenece al contrato de M3. **PyTest:** transporte simulado, timeout, respuesta inválida y cierre.
+- [x] **25 min — Mapear respuesta de elegibilidad de M3.** Validar el esquema OpenAPI `ElegibilidadDesdeM3` con campos obligatorios, enums y propiedades adicionales prohibidas, y convertirlo a tipos internos. **PyTest:** habilitación `APPROVED`, estados no elegibles, vehículo y respuesta incompleta.
+- [x] **25 min — Implementar regla fail-closed de M3.** Convertir timeout/fallo/respuesta inválida en errores explícitos `504`/`503`; un `[]` de tipos habilitados es una respuesta válida no elegible, no una lista de candidatos vacía. **PyTest:** excepciones de dependencia nunca se convierten en resultados vacíos.
+- [x] **25 min — Implementar cálculo de distancia lineal y orden.** Calcular Haversine, aplicar radio y límite configurados y ordenar por distancia/ID. **PyTest:** distancia conocida, borde exacto del radio, límite y empate determinístico.
+- [x] **25 min — Implementar servicio de cobertura geográfica.** Validar GeoJSON `Polygon`/`MultiPolygon`, incluidos bordes y agujeros; fallar cerrado si falta la configuración. **PyTest:** puntos interiores, en el borde y exteriores sobre fixtures geométricos. **Pendiente externo:** aprobar y cargar el polígono real de Chaco/Corrientes en la tarea de acuerdos de preparación; los fixtures no representan la cobertura oficial.
+- [x] **25 min — Implementar filtro de candidatos completo.** Combinar ubicación vigente, estado conectado/disponible, reserva activa, tipo de vehículo, aprobación M3 y cobertura; propagar errores M3 sin devolver resultados parciales. **PyTest:** exclusiones, candidato válido, privacidad de respuesta y fail-closed.
+- [x] **25 min — Añadir ETA de retiro a candidatos.** Consultar router para origen/conductor sin exponer posiciones; permitir omisión solo ante fallo según política. **PyTest:** ETA obtenido, degradación aprobada y falla M3 no degradable.
+- [x] **25 min — Publicar `GET /api/v1/conductores/cercanos`.** Validar parámetros, aplicar default y límites acordados y retornar contrato sin GPS. **PyTest:** respuesta vacía, candidato válido, radio/límite y ausencia de latitud/longitud.
+- [x] **25 min — Añadir protección de privacidad al endpoint de proximidad.** Aplicar `Cache-Control: no-store` y verificar sanitización de access logs/traces. **PyTest:** headers y logs sin coordenadas ni URL completa.
 
 ## 5. Reservas atómicas e idempotencia M5
 

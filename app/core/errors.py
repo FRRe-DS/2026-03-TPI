@@ -34,3 +34,23 @@ class DependencyTimeoutError(DomainError):
             title="Tiempo de espera agotado",
             detail=detail,
         )
+
+
+class M3UnavailableError(DomainError):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=503,
+            code="M3_UNAVAILABLE",
+            title="Dependencia no disponible",
+            detail="M3 no pudo validar la elegibilidad del conductor.",
+        )
+
+
+class M3TimeoutError(DomainError):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=504,
+            code="M3_TIMEOUT",
+            title="Tiempo de espera agotado",
+            detail="M3 no respondió dentro del tiempo permitido.",
+        )

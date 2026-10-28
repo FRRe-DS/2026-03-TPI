@@ -29,3 +29,56 @@ def test_redis_url_loads_from_environment(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setenv("REDIS_URL", redis_url)
 
     assert Settings(_env_file=None).redis_url == redis_url
+
+
+def test_m3_client_settings_load_service_endpoint_and_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("M3_BASE_URL", "https://m3.example.test")
+    monkeypatch.setenv("M3_SERVICE_TOKEN", "service-token")
+    monkeypatch.setenv(
+        "M3_ELIGIBILITY_PATH",
+        "/drivers/{conductor_id}/eligibility",
+    )
+    monkeypatch.setenv("M3_TIMEOUT_SECONDS", "1.5")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.m3_base_url == "https://m3.example.test"
+    assert settings.m3_service_token == "service-token"
+    assert settings.m3_eligibility_path == "/drivers/{conductor_id}/eligibility"
+    assert settings.m3_timeout_seconds == 1.5
+
+
+def test_m3_timeout_must_be_finite() -> None:
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, m3_timeout_seconds=float("inf"))
+
+
+def test_search_radius_limits_are_configurable_and_consistent() -> None:
+    settings = Settings(
+        _env_file=None,
+        default_search_radius_km=5,
+        max_search_radius_km=12,
+        max_candidates=30,
+    )
+
+    assert settings.default_search_radius_km == 5
+    assert settings.max_search_radius_km == 12
+    assert settings.max_candidates == 30
+
+    with pytest.raises(ValidationError):
+        Settings(
+            _env_file=None,
+            default_search_radius_km=5,
+            max_search_radius_km=4,
+        )
+
+
+def test_coverage_geojson_is_read_from_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    document = '{"type":"Polygon","coordinates":[]}'
+    monkeypatch.setenv("COVERAGE_GEOJSON", document)
+
+    assert Settings(_env_file=None).coverage_geojson == document
