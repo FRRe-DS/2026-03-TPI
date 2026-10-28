@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field #importantes para decirle a fastapi que de
 from typing import List,Optional # para determinar si es opcional el contenido de un campo, es decir puede ser null o none
 from uuid import UUID
 from datetime import datetime
+from enum import Enum
 
 '''
 importante, si un dato no viene y DEBE fallar, es decir es obligatorio el dato, debe ir ... en field si o si
@@ -78,4 +79,15 @@ class SalidaHaciaM9(BaseModel):
     posible: bool =Field(...,description="verificacion de integridad sobre el viaje, si es verosimil")
     ett: int=Field(...,description="Tiempo estimado de viaje origen destino")
     dod: float = Field(...,description="distancia origen-destino en km")
+
+#enumeraciones y tipos compuestos que intervienen en cache
+class EstadoTmp(str,Enum):
+    RESERVADO="RESERVADO"
+    LIBERADO="LIBERADO"
+
+class Coordenada(BaseModel):
+    latitud: float = Field(..., ge=-90.0, le=90.0, description="Latitud en grados decimales")
+    longitud: float = Field(..., ge=-180.0, le=180.0, description="Longitud en grados decimales")
+
+
 
