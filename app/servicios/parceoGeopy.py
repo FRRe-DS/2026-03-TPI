@@ -1,9 +1,15 @@
 '''
 ===============================================
+Resuelve RF 4.5 GEOCODIFICACION
+===============================================
 Codigo vinculante a la consulta con el servicio/servidor externo de geolocalizacion con geopy
 debe ser invocada desde un procesamiento de eventos unicas de "hilo" del SO, de esa manera no 
 congela el resto de peticiones de servidor entre modulos, por ello se implementa cola de espera
 para procesar peticiones sin que el servidor nos bloquee.
+
+se debe invocar mediante
+lat,long = obtener_coordenadas(direccion)
+
 '''
 import logging
 from geopy.exc import GeocoderTimedOut, GeopyError
@@ -38,8 +44,8 @@ def obtener_coordenadas(direccion: str) -> tuple[float, float]: #retorna tupla (
     if not direccion or not direccion.strip(): #no hay string de entrada
         raise ValueError("La direccion proporcionada está vacia.")
     
-    cuadrante_busqueda = [(ZONA_PERMITIDA_BOX["lat_max"], ZONA_PERMITIDA_BOX["lon_min"]),
-                        (ZONA_PERMITIDA_BOX["lat_min"], ZONA_PERMITIDA_BOX["lon_max"]),]            
+    cuadrante_busqueda = [(ZONA_PERMITIDA["lat_max"], ZONA_PERMITIDA["lon_min"]),
+                        (ZONA_PERMITIDA["lat_min"], ZONA_PERMITIDA["lon_max"]),]            
     
     with _lock:
         tiempo_actual = time.time()
