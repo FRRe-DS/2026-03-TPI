@@ -26,7 +26,7 @@ _BEARER_TOKEN = re.compile(r"(?i)\bBearer\s+[A-Za-z0-9._~+/-]+=*")
 _URL_CREDENTIALS = re.compile(r"(?i)(://)[^/@\s:]+:[^/@\s]+@")
 _ABSOLUTE_URL = re.compile(r"(?i)\bhttps?://[^\s\"'<>]+")
 _COORDINATE_ASSIGNMENT = re.compile(
-    r"(?i)\b((?:(?:origen|destino)[_-])?"
+    r"(?i)\b((?:[a-z][a-z0-9]*[_-])*(?:(?:origen|destino)[_-])?"
     r"(?:lat(?:itude|itud)?|lon(?:gitude|gitud)?|lng))"
     r"(\s*[:=]\s*)-?\d{1,3}(?:\.\d+)?"
 )

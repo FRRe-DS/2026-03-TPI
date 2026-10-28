@@ -79,13 +79,13 @@ Este backlog desglosa la arquitectura de [plan.md](./plan.md) en unidades de imp
 
 ## 7. Health, integración, pruebas y documentación
 
-- [ ] **25 min — Implementar `GET /health/live` y `/health/ready`.** Mantener liveness independiente y readiness sin detalles internos. **PyTest:** liveness `200`, readiness listo `200` y dependencia crítica no disponible `503`.
-- [ ] **25 min — Añadir fixture de reloj y fábrica de app de pruebas.** Evitar sueño real y dependencias globales; aislar settings/repositorios por test. **PyTest:** test de TTL instantáneo y teardown de recursos.
+- [x] **25 min — Implementar `GET /health/live` y `/health/ready`.** Mantener liveness independiente y readiness sin detalles internos. **PyTest:** liveness `200`, readiness listo `200` y dependencia crítica no disponible `503`.
+- [x] **25 min — Añadir fixture de reloj y fábrica de app de pruebas.** Evitar sueño real y dependencias globales; aislar settings/repositorios por test. **PyTest:** test de TTL instantáneo y teardown de recursos.
 - [x] **25 min — Añadir pruebas API de headers y Problem Details.** Verificar `X-Request-Id` en éxitos y errores, content type y status concordante. **PyTest:** cubrir `400`, `401`, `403`, `404`, `409`, `422`, `503` y `504` representativos.
-- [ ] **25 min — Añadir pruebas de privacidad de punta a punta.** Recorrer respuesta, logs simulados y propagación de correlación. **PyTest:** ninguna coordenada GPS de conductor aparece en respuesta M5 ni logs.
-- [ ] **25 min — Añadir prueba de contrato OpenAPI.** Comparar rutas, métodos, status y campos JSON de la app con el contrato versionado. **PyTest:** test de contrato falla ante campo requerido ausente o extra prohibido.
+- [x] **25 min — Añadir pruebas de privacidad de punta a punta.** Recorrer respuesta, logs simulados y propagación de correlación. **PyTest:** ninguna coordenada GPS de conductor aparece en respuesta M5 ni logs.
+- [x] **25 min — Añadir prueba de contrato OpenAPI.** Comparar rutas, métodos, status y campos JSON de la app con el contrato versionado. **PyTest:** test de contrato falla ante campo requerido ausente o extra prohibido.
 - [x] **25 min — Ejecutar suite de integración en Docker y reparar regresiones relacionadas.** Ejecutar la suite prescrita con PostgreSQL y el backend efímero elegido. **Verificación:** `docker compose exec -T api python -m pytest -q` completa correctamente; `alembic check` no detecta diferencias.
-- [ ] **25 min — Actualizar guía de despliegue y operación.** Documentar variables, servicios adicionales aprobados, migraciones, health, timeouts y redacción de logs. **Verificación:** instrucciones reproducibles en entorno limpio, sin secretos en documentación.
+- [x] **25 min — Actualizar guía de despliegue y operación.** Documentar variables, servicios adicionales aprobados, migraciones, health, timeouts y redacción de logs. **Verificación:** instrucciones reproducibles en entorno limpio, sin secretos en documentación.
 
 ## Secuencia sugerida y gates
 

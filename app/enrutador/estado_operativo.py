@@ -14,7 +14,17 @@ router = APIRouter(
 )
 
 
-@router.post("", response_model=EstadoOperativoRegistrado, status_code=201)
+@router.post(
+    "",
+    response_model=EstadoOperativoRegistrado,
+    status_code=201,
+    responses={
+        200: {
+            "model": EstadoOperativoRegistrado,
+            "description": "Estado operativo actualizado.",
+        }
+    },
+)
 def registrar_estado_operativo(
     conductor_id: UUID,
     event: EstadoOperativo,

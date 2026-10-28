@@ -45,6 +45,7 @@ services: # palabra reservada que indica que todo lo de abajo identado dentro de
       - ./alembic:/tpim4/alembic
       - ./alembic.ini:/tpim4/alembic.ini
       - ./tests:/tpim4/tests
+      - ./openapi.yml:/tpim4/openapi.yml
     env_file:
       - .env
     environment:

@@ -102,7 +102,9 @@ def test_redis_location_expires_at_configured_ttl() -> None:
             assert await repository.upsert(location) is LocationWriteResult.CREATED
             assert await repository.get_current(conductor_id) is not None
 
-            await asyncio.sleep(1.1)
+            ttl = await client.ttl(key)
+            assert 0 < ttl <= 1
+            await client.pexpire(key, 0)
 
             assert await repository.get_current(conductor_id) is None
         finally:

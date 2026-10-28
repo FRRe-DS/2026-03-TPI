@@ -15,7 +15,17 @@ router = APIRouter(
 )
 
 
-@router.post("", response_model=ResultadoReservaTemporal, status_code=201)
+@router.post(
+    "",
+    response_model=ResultadoReservaTemporal,
+    status_code=201,
+    responses={
+        200: {
+            "model": ResultadoReservaTemporal,
+            "description": "Reserva existente del mismo titular o liberación.",
+        }
+    },
+)
 def cambiar_reserva_temporal(
     conductor_id: UUID,
     change: CambioReservaTemporal,

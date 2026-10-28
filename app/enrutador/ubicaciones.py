@@ -10,7 +10,12 @@ from app.servicios.operaciones import register_location
 router = APIRouter(prefix="/api/v1/ubicaciones", tags=["Ubicaciones"])
 
 
-@router.post("", response_model=UbicacionRegistrada, status_code=201)
+@router.post(
+    "",
+    response_model=UbicacionRegistrada,
+    status_code=201,
+    responses={200: {"model": UbicacionRegistrada, "description": "Ubicación actualizada."}},
+)
 async def registrar_ubicacion(
     location: ActualizarUbicacion,
     request: Request,

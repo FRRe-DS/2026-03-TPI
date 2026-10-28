@@ -735,7 +735,7 @@ components:
       name: conductor_id
       in: path
       required: true
-      description: Identificador canónico del conductor. Propuesta pendiente de confirmar: UUID.
+      description: "Identificador canónico del conductor. Propuesta pendiente de confirmar: UUID."
       schema:
         $ref: '#/components/schemas/Identificador'
   headers:

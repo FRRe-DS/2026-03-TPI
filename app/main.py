@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from redis.asyncio import Redis
 
 from app.core.config import Settings, get_settings
+from app.database import engine as database_engine
 from app.servicios.coverage import CoverageArea
 from app.core.middleware import RequestIdMiddleware
 from app.core.observability import configure_logging
@@ -15,6 +16,7 @@ from app.core.problem_details import register_problem_details_handlers
 from app.enrutador.estado_operativo import router as estado_operativo_router
 from app.enrutador.conductores import router as conductores_router
 from app.enrutador.geocodificaciones import router as geocodificaciones_router
+from app.enrutador.health import router as health_router
 from app.enrutador.eventos import prueba
 from app.enrutador.reservas import router as reservas_router
 from app.enrutador.rutas import router as rutas_router
@@ -37,13 +39,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     decode_responses=True,
                     health_check_interval=30,
                 )
-                await redis_client.ping()
                 application.state.location_repository = RedisLocationRepository(
                     redis_client,
                     ttl_seconds=app_settings.location_ttl_seconds,
                 )
             else:
                 application.state.location_repository = None
+            application.state.redis_client = redis_client
             if (
                 app_settings.m3_base_url is not None
                 and app_settings.m3_service_token is not None
@@ -81,6 +83,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     application.state.settings = app_settings
     application.state.clock = lambda: datetime.now(timezone.utc)
+    application.state.database_engine = database_engine
+    application.state.redis_client = None
     application.state.m3_client = None
     application.state.geocoding_adapter = None
     application.state.route_estimator = None
@@ -94,6 +98,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(estado_operativo_router)
     application.include_router(reservas_router)
     application.include_router(rutas_router)
+    application.include_router(health_router)
 
     @application.get("/")
     def read_home() -> dict[str, str]:

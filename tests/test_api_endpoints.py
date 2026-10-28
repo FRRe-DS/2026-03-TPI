@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
@@ -7,15 +8,19 @@ import pytest
 import httpx
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, delete, func, select
+from sqlalchemy import delete, func, select
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
-from sqlalchemy.pool import StaticPool
+
+from redis.exceptions import ConnectionError as RedisConnectionError
 
 from app.core.auth import AuthenticatedPrincipal, get_authenticated_principal
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.core.errors import M3UnavailableError
+from app.core.middleware import REQUEST_ID_HEADER
+from app.core.observability import RedactingLogFilter, request_id_context
 from app.clients.m3 import ElegibilidadConductor, EstadoHabilitacionM3
-from app.database import Base, SessionLocal, engine as database_engine, get_db
+from app.database import SessionLocal, engine as database_engine
 from app.main import create_app
 from app.models import (
     EstadoOperativoORM,
@@ -38,7 +43,6 @@ from app.schemas.schemas import (
 )
 from app.servicios.coverage import CoverageArea
 from app.servicios.geocoding import get_geocoding_adapter
-from redis.exceptions import ConnectionError as RedisConnectionError
 
 
 class MemoryLocationRepository:
@@ -104,40 +108,21 @@ def configure_nearby(application: FastAPI) -> MemoryLocationRepository:
 
 
 @pytest.fixture
-def api() -> Iterator[tuple[TestClient, FastAPI]]:
-    engine = create_engine(
-        "sqlite+pysqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    Base.metadata.create_all(engine)
-    application = create_app(
-        Settings(
-            _env_file=None,
-            redis_url=None,
-            reservation_ttl_seconds=60,
-        )
-    )
-    application.state.test_engine = engine
-    principal = AuthenticatedPrincipal(subject=uuid4())
-    application.dependency_overrides[get_authenticated_principal] = lambda: principal
-
-    def override_db() -> Iterator[Session]:
-        with Session(engine, expire_on_commit=False) as session:
-            yield session
-
-    application.dependency_overrides[get_db] = override_db
-    application.dependency_overrides[get_location_repository] = (
-        lambda: MemoryLocationRepository()
+def api(
+    test_app_factory,
+    test_clock,
+) -> Iterator[tuple[TestClient, FastAPI]]:
+    application, _engine = test_app_factory(
+        location_repository=MemoryLocationRepository(),
+        clock=test_clock,
     )
     with TestClient(application) as client:
         yield client, application
-    Base.metadata.drop_all(engine)
-    engine.dispose()
 
 
 def test_location_endpoint_returns_create_then_update_without_coordinates(
     api: tuple[TestClient, object],
+    test_clock,
 ) -> None:
     client, application = api
     repository = MemoryLocationRepository()
@@ -162,6 +147,7 @@ def test_location_endpoint_returns_create_then_update_without_coordinates(
     assert "longitud" not in first.json()
 
     payload["timestamp_ubicacion"] = "2026-10-27T15:00:01Z"
+    test_clock.advance(timedelta(seconds=1))
     updated = client.post("/api/v1/ubicaciones", json=payload)
     assert updated.status_code == 200
     assert updated.json()["timestamp_ubicacion"] == payload["timestamp_ubicacion"]
@@ -243,6 +229,87 @@ def test_location_timestamp_validation_uses_injected_clock(
     assert future.headers["x-request-id"]
     assert future.json()["code"] == "LOCATION_TIMESTAMP_IN_FUTURE"
     assert repository.locations[conductor_id].timestamp_ubicacion == now
+
+
+def test_health_liveness_is_independent_of_dependencies(
+    api: tuple[TestClient, FastAPI],
+) -> None:
+    client, application = api
+    application.state.database_engine = None
+    application.state.redis_client = None
+
+    response = client.get("/health/live")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "UP"}
+    assert response.headers["x-request-id"]
+
+
+def test_health_readiness_requires_postgres_and_redis(
+    api: tuple[TestClient, FastAPI],
+) -> None:
+    client, application = api
+
+    class HealthyRedis:
+        async def ping(self) -> bool:
+            return True
+
+    class UnavailableRedis:
+        async def ping(self) -> bool:
+            raise RedisConnectionError("private Redis endpoint")
+
+    class UnavailableDatabase:
+        def connect(self):
+            raise OperationalError(
+                "SELECT 1",
+                {},
+                RuntimeError("private PostgreSQL endpoint"),
+            )
+
+    application.state.redis_client = HealthyRedis()
+    ready = client.get("/health/ready")
+    assert ready.status_code == 200
+    assert ready.json() == {"status": "READY"}
+
+    application.state.database_engine = UnavailableDatabase()
+    database_unavailable = client.get("/health/ready")
+    assert database_unavailable.status_code == 503
+    assert database_unavailable.headers["content-type"].startswith(
+        "application/problem+json"
+    )
+    assert database_unavailable.json()["status"] == 503
+    assert "private PostgreSQL endpoint" not in database_unavailable.text
+    assert "postgres" not in database_unavailable.text.lower()
+
+    application.state.database_engine = application.state.test_engine
+    application.state.redis_client = UnavailableRedis()
+    redis_unavailable = client.get("/health/ready")
+    assert redis_unavailable.status_code == 503
+    assert redis_unavailable.headers["content-type"].startswith(
+        "application/problem+json"
+    )
+    assert "private Redis endpoint" not in redis_unavailable.text
+
+
+def test_manual_clock_advances_without_waiting(test_clock) -> None:
+    initial_time = test_clock.current
+
+    advanced_time = test_clock.advance(timedelta(seconds=30))
+
+    assert advanced_time - initial_time == timedelta(seconds=30)
+
+
+def test_health_readiness_with_docker_postgres_and_redis() -> None:
+    settings = get_settings()
+    if database_engine is None or settings.redis_url is None:
+        pytest.skip("Este test de integración requiere PostgreSQL y Redis.")
+
+    application = create_app(Settings(_env_file=None, redis_url=settings.redis_url))
+    with TestClient(application) as client:
+        response = client.get("/health/ready")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "READY"}
 
 
 def test_operational_state_normalizes_and_deduplicates_event_ids(
@@ -410,10 +477,9 @@ def test_reservation_idempotency_conflicts_release_and_request_correlation(
 
 def test_expired_reservation_can_be_replaced_with_injected_clock(
     api: tuple[TestClient, object],
+    test_clock,
 ) -> None:
     client, application = api
-    current_time = [datetime(2026, 10, 27, 15, 0, tzinfo=timezone.utc)]
-    application.state.clock = lambda: current_time[0]
     conductor_id = uuid4()
     path = f"/api/v1/conductores/{conductor_id}/reserva"
     state_response = client.post(
@@ -429,7 +495,7 @@ def test_expired_reservation_can_be_replaced_with_injected_clock(
     assert first.status_code == 201
     assert first.json()["expira_en"] == "2026-10-27T15:01:00Z"
 
-    current_time[0] += timedelta(seconds=60)
+    test_clock.advance(timedelta(seconds=60))
     replacement = client.post(
         path,
         json={"estado_temporal": "RESERVADO", "solicitud_id": str(uuid4())},
@@ -697,6 +763,98 @@ def test_nearby_endpoint_returns_eta_without_driver_coordinates(
             PuntoGeografico(latitud=0.5, longitud=0.5),
         )
     ]
+
+
+def test_nearby_privacy_end_to_end_redacts_gps_and_propagates_request_id(
+    api: tuple[TestClient, FastAPI],
+    caplog,
+) -> None:
+    client, application = api
+    driver_id = uuid4()
+    location_repository = configure_nearby(application)
+    now = application.state.clock()
+    driver_latitude, driver_longitude = 0.512345, 0.523456
+    location_repository.locations[driver_id] = StoredLocation(
+        conductor_id=driver_id,
+        latitud=driver_latitude,
+        longitud=driver_longitude,
+        timestamp_ubicacion=now,
+        recibida_en=now,
+        expira_en=now + timedelta(seconds=30),
+    )
+    with Session(application.state.test_engine) as session:
+        session.add(
+            EstadoOperativoORM(
+                conductor_id=driver_id,
+                connected=True,
+                available=True,
+                actualizado_en=now,
+            )
+        )
+        session.commit()
+    application.state.m3_client = NearbyM3Client(
+        {
+            driver_id: ElegibilidadConductor(
+                estado_habilitacion=EstadoHabilitacionM3.APPROVED,
+                tipos_vehiculo_habilitados=(TipoVehiculo.AUTO,),
+            )
+        }
+    )
+    route_logger = logging.getLogger("app.test_nearby_privacy")
+    seen_request_ids: list[str | None] = []
+
+    async def estimator(origin, destination, vehicle):
+        seen_request_ids.append(request_id_context.get())
+        route_logger.info(
+            "route request url=%s driver_latitud=%s driver_longitud=%s",
+            (
+                "https://maps.example/route?"
+                f"origen_latitud={origin.latitud}&destino_longitud={destination.longitud}"
+            ),
+            driver_latitude,
+            driver_longitude,
+        )
+        return EstimacionRuta(
+            origen=origin,
+            destino=destination,
+            distancia_estimada_km=1.2,
+            eta_minutos=4,
+            calculado_en=now,
+            fuente=FuenteEstimacion.PROVEEDOR_MAPA,
+            viable=True,
+        )
+
+    application.state.route_estimator = estimator
+    caplog.handler.addFilter(RedactingLogFilter())
+    caplog.set_level(logging.INFO, logger=route_logger.name)
+    request_id = "nearby-privacy-correlation-01"
+    response = client.get(
+        "/api/v1/conductores/cercanos?"
+        "origen_latitud=0.5&origen_longitud=0.5&tipo_vehiculo=AUTO",
+        headers={REQUEST_ID_HEADER: request_id},
+    )
+
+    candidate = response.json()["conductores"][0]
+    assert response.status_code == 200
+    assert response.headers[REQUEST_ID_HEADER] == request_id
+    assert "latitud" not in candidate
+    assert "longitud" not in candidate
+    assert str(driver_latitude) not in response.text
+    assert str(driver_longitude) not in response.text
+    assert seen_request_ids == [request_id]
+
+    privacy_records = [
+        record
+        for record in caplog.records
+        if record.name == route_logger.name
+    ]
+    assert len(privacy_records) == 1
+    log_output = privacy_records[0].getMessage()
+    assert privacy_records[0].request_id == request_id
+    assert str(driver_latitude) not in log_output
+    assert str(driver_longitude) not in log_output
+    assert "https://maps.example/route" not in log_output
+    assert request_id in caplog.text
 
 
 def test_nearby_endpoint_returns_empty_list_and_privacy_header(
