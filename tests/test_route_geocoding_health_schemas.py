@@ -1,8 +1,13 @@
+import asyncio
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import pytest
+from geopy.exc import GeocoderTimedOut
 from pydantic import ValidationError
 
+from app.clients.geocoding import NominatimGeocodingAdapter
+from app.core.errors import DependencyTimeoutError, DependencyUnavailableError
 from app.schemas.schemas import (
     CoincidenciaGeocodificacion,
     ConsultaGeocodificacion,
@@ -13,6 +18,7 @@ from app.schemas.schemas import (
     ReadinessResponse,
     ResultadoGeocodificacion,
 )
+from app.servicios.route_estimation import estimate_route
 
 
 def test_route_estimate_deserializes_and_serializes_contract_fields() -> None:
@@ -24,6 +30,7 @@ def test_route_estimate_deserializes_and_serializes_contract_fields() -> None:
             "eta_minutos": 0,
             "calculado_en": "2026-10-27T15:04:05Z",
             "fuente": "proveedor_mapa",
+            "viable": True,
         }
     )
 
@@ -38,6 +45,7 @@ def test_route_estimate_deserializes_and_serializes_contract_fields() -> None:
         "eta_minutos": 0,
         "calculado_en": "2026-10-27T15:04:05Z",
         "fuente": "proveedor_mapa",
+        "viable": True,
     }
 
 
@@ -58,11 +66,81 @@ def test_route_estimate_rejects_invalid_values(field: str, value: object) -> Non
         "eta_minutos": 5,
         "calculado_en": "2026-10-27T15:04:05Z",
         "fuente": "estimacion_local",
+        "viable": True,
     }
     payload[field] = value
 
     with pytest.raises(ValidationError):
         EstimacionRuta.model_validate(payload)
+
+
+def test_route_adapter_accepts_provider_and_rejects_unapproved_local_fallback() -> None:
+    origin = PuntoGeografico(latitud=0.1, longitud=0.1)
+    destination = PuntoGeografico(latitud=0.2, longitud=0.2)
+
+    async def route_provider(request_origin, request_destination, vehicle):
+        return {
+            "origen": request_origin.model_dump(),
+            "destino": request_destination.model_dump(),
+            "distancia_estimada_km": 1.8,
+            "eta_minutos": 6,
+            "calculado_en": "2026-10-27T15:04:05Z",
+            "fuente": "proveedor_mapa",
+            "viable": True,
+        }
+
+    result = asyncio.run(
+        estimate_route(
+            route_provider,
+            origin,
+            destination,
+            None,
+            timeout_seconds=1,
+        )
+    )
+    assert result.distancia_estimada_km == 1.8
+    assert result.fuente is FuenteEstimacion.PROVEEDOR_MAPA
+
+    async def local_fallback(request_origin, request_destination, vehicle):
+        return {
+            "origen": request_origin.model_dump(),
+            "destino": request_destination.model_dump(),
+            "distancia_estimada_km": 1.8,
+            "eta_minutos": 6,
+            "calculado_en": "2026-10-27T15:04:05Z",
+            "fuente": "estimacion_local",
+            "viable": True,
+        }
+
+    with pytest.raises(DependencyUnavailableError):
+        asyncio.run(
+            estimate_route(
+                local_fallback,
+                origin,
+                destination,
+                None,
+                timeout_seconds=1,
+            )
+        )
+
+
+def test_route_adapter_enforces_configured_timeout() -> None:
+    origin = PuntoGeografico(latitud=0.1, longitud=0.1)
+    destination = PuntoGeografico(latitud=0.2, longitud=0.2)
+
+    async def slow_provider(request_origin, request_destination, vehicle):
+        await asyncio.sleep(0.05)
+
+    with pytest.raises(DependencyTimeoutError):
+        asyncio.run(
+            estimate_route(
+                slow_provider,
+                origin,
+                destination,
+                None,
+                timeout_seconds=0.001,
+            )
+        )
 
 
 @pytest.mark.parametrize(
@@ -111,6 +189,10 @@ def test_geocoding_request_validates_contract_lengths_and_extra_fields() -> None
         ConsultaGeocodificacion(direccion="Calle 1", pais="ARG")
     with pytest.raises(ValidationError):
         ConsultaGeocodificacion(direccion="Calle 1", pais="AR", latitud=0)
+    with pytest.raises(ValidationError):
+        ConsultaGeocodificacion(direccion="   ", pais="AR")
+    with pytest.raises(ValidationError):
+        ConsultaGeocodificacion(direccion="Calle 1", pais="1!")
 
 
 def test_geocoding_result_accepts_empty_list() -> None:
@@ -169,6 +251,97 @@ def test_geocoding_result_preserves_multiple_ambiguous_matches() -> None:
 def test_geocoding_result_rejects_invalid_match(payload: dict[str, object]) -> None:
     with pytest.raises(ValidationError):
         CoincidenciaGeocodificacion.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    ("provider_results", "expected_count"),
+    [
+        ([], 0),
+        (
+            [
+                SimpleNamespace(
+                    latitude=-27.45,
+                    longitude=-58.98,
+                    address="Plaza, Resistencia",
+                    raw={"display_name": "Plaza, Resistencia"},
+                )
+            ],
+            1,
+        ),
+        (
+            [
+                SimpleNamespace(
+                    latitude=-27.45,
+                    longitude=-58.98,
+                    address="Primera",
+                    raw={"display_name": "Primera"},
+                ),
+                SimpleNamespace(
+                    latitude=-27.46,
+                    longitude=-58.97,
+                    address="Segunda",
+                    raw={"display_name": "Segunda"},
+                ),
+            ],
+            2,
+        ),
+    ],
+)
+def test_nominatim_adapter_maps_zero_one_and_multiple_matches(
+    provider_results: list[object], expected_count: int
+) -> None:
+    class FakeGeocoder:
+        def geocode(self, query, **kwargs):
+            assert query == "Plaza 25 de Mayo, Resistencia, AR"
+            assert kwargs["country_codes"] == "ar"
+            assert kwargs["exactly_one"] is False
+            return provider_results
+
+    adapter = NominatimGeocodingAdapter(
+        timeout_seconds=1,
+        user_agent="test-agent",
+        min_delay_seconds=0.001,
+        geocoder=FakeGeocoder(),
+    )
+    query = ConsultaGeocodificacion(
+        direccion=" Plaza 25 de Mayo ",
+        localidad=" Resistencia ",
+        pais="ar",
+    )
+
+    result = asyncio.run(adapter.geocode(query))
+
+    assert len(result.coincidencias) == expected_count
+    assert all(match.etiqueta for match in result.coincidencias)
+
+
+def test_nominatim_adapter_maps_timeout_and_malformed_results() -> None:
+    class TimeoutGeocoder:
+        def geocode(self, query, **kwargs):
+            raise GeocoderTimedOut("provider timeout")
+
+    timed_out = NominatimGeocodingAdapter(
+        timeout_seconds=1,
+        user_agent="test-agent",
+        min_delay_seconds=0.001,
+        geocoder=TimeoutGeocoder(),
+    )
+    query = ConsultaGeocodificacion(direccion="Calle 1", pais="AR")
+    with pytest.raises(DependencyTimeoutError):
+        asyncio.run(timed_out.geocode(query))
+
+    class MalformedGeocoder:
+        def geocode(self, query, **kwargs):
+            return [SimpleNamespace(latitude=100, longitude=0, address="Invalid")]
+
+    malformed = NominatimGeocodingAdapter(
+        timeout_seconds=1,
+        user_agent="test-agent",
+        min_delay_seconds=0.001,
+        geocoder=MalformedGeocoder(),
+    )
+    with pytest.raises(DependencyUnavailableError):
+        asyncio.run(malformed.geocode(query))
 
 
 @pytest.mark.parametrize(

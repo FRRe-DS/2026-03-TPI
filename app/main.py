@@ -3,6 +3,7 @@ from collections.abc import AsyncGenerator
 from datetime import datetime, timezone
 
 from app.clients.m3 import ClienteM3
+from app.clients.geocoding import NominatimGeocodingAdapter
 from fastapi import FastAPI
 from redis.asyncio import Redis
 
@@ -13,6 +14,7 @@ from app.core.observability import configure_logging
 from app.core.problem_details import register_problem_details_handlers
 from app.enrutador.estado_operativo import router as estado_operativo_router
 from app.enrutador.conductores import router as conductores_router
+from app.enrutador.geocodificaciones import router as geocodificaciones_router
 from app.enrutador.eventos import prueba
 from app.enrutador.reservas import router as reservas_router
 from app.enrutador.rutas import router as rutas_router
@@ -54,6 +56,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     timeout_seconds=app_settings.m3_timeout_seconds,
                 )
             application.state.m3_client = m3_client
+            application.state.geocoding_adapter = NominatimGeocodingAdapter(
+                timeout_seconds=app_settings.geocoding_timeout_seconds,
+                user_agent=app_settings.geocoding_user_agent,
+                min_delay_seconds=app_settings.geocoding_min_delay_seconds,
+            )
             application.state.coverage = (
                 CoverageArea.from_geojson(app_settings.coverage_geojson)
                 if app_settings.coverage_geojson
@@ -75,12 +82,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.settings = app_settings
     application.state.clock = lambda: datetime.now(timezone.utc)
     application.state.m3_client = None
+    application.state.geocoding_adapter = None
     application.state.route_estimator = None
     application.state.coverage = None
     application.add_middleware(RequestIdMiddleware)
     register_problem_details_handlers(application)
     application.include_router(prueba, prefix="/PruebaM4")
     application.include_router(conductores_router)
+    application.include_router(geocodificaciones_router)
     application.include_router(ubicaciones_router)
     application.include_router(estado_operativo_router)
     application.include_router(reservas_router)

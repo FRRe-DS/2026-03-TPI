@@ -82,3 +82,16 @@ def test_coverage_geojson_is_read_from_environment(
     monkeypatch.setenv("COVERAGE_GEOJSON", document)
 
     assert Settings(_env_file=None).coverage_geojson == document
+
+
+def test_geocoding_settings_have_bounded_defaults_and_require_user_agent() -> None:
+    settings = Settings(_env_file=None)
+
+    assert settings.geocoding_timeout_seconds == 5
+    assert settings.geocoding_user_agent == "m4-transporte-app"
+    assert settings.geocoding_min_delay_seconds == 1.1
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, geocoding_timeout_seconds=float("inf"))
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, geocoding_user_agent=" ")

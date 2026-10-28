@@ -123,5 +123,6 @@ async def buscar_conductores_cercanos(
         coverage=coverage,
         route_estimator=route_estimator,
         allow_eta_degradation=settings.proximity_eta_degradation_enabled,
+        route_timeout_seconds=settings.maps_timeout_seconds,
         now=request.app.state.clock(),
     )

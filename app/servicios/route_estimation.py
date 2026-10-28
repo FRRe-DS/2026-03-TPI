@@ -1,16 +1,52 @@
-from collections.abc import Awaitable, Callable
-
 import asyncio
+import math
+from collections.abc import Awaitable, Callable, Mapping
+
 import httpx
 from fastapi import Request
+from pydantic import ValidationError
 
 from app.core.errors import DependencyTimeoutError, DependencyUnavailableError
-from app.schemas.schemas import EstimacionRuta, PuntoGeografico, TipoVehiculo
+from app.schemas.schemas import (
+    EstimacionRuta,
+    FuenteEstimacion,
+    PuntoGeografico,
+    TipoVehiculo,
+)
 
 RouteEstimator = Callable[
     [PuntoGeografico, PuntoGeografico, TipoVehiculo | None],
-    Awaitable[EstimacionRuta],
+    Awaitable[EstimacionRuta | Mapping[str, object]],
 ]
+
+
+class RouteEstimatorAdapter:
+    def __init__(self, provider: RouteEstimator) -> None:
+        self._provider = provider
+
+    async def __call__(
+        self,
+        origin: PuntoGeografico,
+        destination: PuntoGeografico,
+        vehicle: TipoVehiculo | None,
+    ) -> EstimacionRuta:
+        estimate = await self._provider(origin, destination, vehicle)
+        try:
+            result = EstimacionRuta.model_validate(estimate)
+        except ValidationError as error:
+            raise DependencyUnavailableError(
+                "El proveedor de rutas devolvió una respuesta inválida."
+            ) from error
+
+        if (
+            result.origen != origin
+            or result.destino != destination
+            or result.fuente is not FuenteEstimacion.PROVEEDOR_MAPA
+        ):
+            raise DependencyUnavailableError(
+                "El proveedor de rutas devolvió una estimación inconsistente."
+            )
+        return result
 
 
 def get_route_estimator(request: Request) -> RouteEstimator:
@@ -32,9 +68,16 @@ async def estimate_route(
     origin: PuntoGeografico,
     destination: PuntoGeografico,
     vehicle: TipoVehiculo | None,
+    *,
+    timeout_seconds: float,
 ) -> EstimacionRuta:
+    if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
+        raise ValueError("timeout_seconds debe ser positivo y finito.")
     try:
-        return await estimator(origin, destination, vehicle)
+        return await asyncio.wait_for(
+            RouteEstimatorAdapter(estimator)(origin, destination, vehicle),
+            timeout=timeout_seconds,
+        )
     except (asyncio.TimeoutError, httpx.TimeoutException) as error:
         raise DependencyTimeoutError(
             "El proveedor de rutas excedió el tiempo de espera."

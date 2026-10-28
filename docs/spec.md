@@ -39,4 +39,7 @@ Este documento define el comportamiento funcional, contratos y reglas de negocio
 - **Descripción:** Cálculo de distancias y tiempos estimados de viaje.
 - **Reglas de Negocio:**
   - **Integración con M9:** M9 consulta la viabilidad geográfica (si un viaje es posible dentro de la zona de cobertura) y obtiene el ETA/distancia preliminar para reservas a futuro.
+  - El endpoint consultable verifica que origen y destino estén dentro de `COVERAGE_GEOJSON`; si falta el polígono configurado devuelve `503`. La respuesta incluye `viable`, distancia de ruta, ETA, instante de cálculo y fuente. Un proveedor puede informar ruta no viable (`viable=false`) sin que M4 cree una reserva.
+  - **Mapas:** Nominatim es el geocoder; el adaptador de rutas requiere un proveedor inyectado con timeout. No hay fallback local aprobado; su ausencia o fallo se devuelve como `503`/`504`.
   - **Integración con M7:** M4 procesa proactivamente los cálculos de distancia (`dod`) y tiempo (`ett`) asociados al identificador del viaje y se los envía a M7 para el cálculo de tarifas, operando de forma asíncrona y resiliente (sin bloqueos ante caídas de dependencias).
+  - **Acuerdo vigente M7:** hasta aprobar el contrato push descrito por esta regla, M7 consulta `GET /api/v1/rutas/estimacion`; no se implementa una llamada saliente ni outbox sin contrato y versión OpenAPI aprobados.

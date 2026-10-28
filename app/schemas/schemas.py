@@ -160,6 +160,7 @@ class EstimacionRuta(BaseModel):
     eta_minutos: int = Field(ge=0)
     calculado_en: datetime
     fuente: FuenteEstimacion
+    viable: bool
 
     model_config = ConfigDict(extra="forbid")
 
@@ -175,6 +176,24 @@ class ConsultaGeocodificacion(BaseModel):
     pais: str = Field(min_length=2, max_length=2)
 
     model_config = ConfigDict(extra="forbid")
+
+    @field_validator("direccion", "localidad")
+    @classmethod
+    def text_fields_must_not_be_blank(cls, value: str | None) -> str | None:
+        if value is not None:
+            normalized = value.strip()
+            if not normalized:
+                raise ValueError("El campo no puede estar vacío.")
+            return normalized
+        return value
+
+    @field_validator("pais")
+    @classmethod
+    def country_code_must_be_iso_alpha2(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if len(normalized) != 2 or not normalized.isalpha() or not normalized.isascii():
+            raise ValueError("pais debe ser un código ISO 3166-1 alfa-2.")
+        return normalized
 
 
 class CoincidenciaGeocodificacion(BaseModel):

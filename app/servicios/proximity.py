@@ -53,6 +53,7 @@ async def find_nearby_candidates(
     coverage: CoverageArea | None,
     route_estimator: RouteEstimator | None = None,
     allow_eta_degradation: bool = True,
+    route_timeout_seconds: float = 5.0,
     now: datetime | None = None,
 ) -> ResultadoBusquedaConductores:
     if (
@@ -166,6 +167,7 @@ async def find_nearby_candidates(
                     driver_location,
                     origin,
                     requested_vehicle,
+                    timeout_seconds=route_timeout_seconds,
                 )
         except (DependencyTimeoutError, DependencyUnavailableError):
             if not allow_eta_degradation:

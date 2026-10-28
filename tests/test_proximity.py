@@ -463,6 +463,7 @@ def test_nearby_filter_adds_route_eta_from_driver_to_origin() -> None:
                 eta_minutos=4,
                 calculado_en=NOW,
                 fuente=FuenteEstimacion.PROVEEDOR_MAPA,
+                viable=True,
             )
 
         result = asyncio.run(

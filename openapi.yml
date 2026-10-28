@@ -509,7 +509,9 @@ paths:
         de cálculo. No se deben guardar las coordenadas más allá del propósito
         de la consulta. No registrar la URL completa en logs. La ruta GET
         conserva el endpoint acordado; para despliegues con exposición de
-        coordenadas en URL, los grupos deben aprobar migrar a POST.
+        coordenadas en URL, los grupos deben aprobar migrar a POST. Ambos
+        puntos deben estar dentro de COVERAGE_GEOJSON. viable=false indica que
+        el proveedor no encontró una ruta viable entre puntos cubiertos.
       x-trazabilidad: [RF-4.6, RF-7.1, RF-9.4, RF-4.7, RNF-13, RNF-19]
       parameters:
         - name: origen_latitud
@@ -573,6 +575,7 @@ paths:
                     eta_minutos: 18
                     calculado_en: '2026-10-20T15:04:05Z'
                     fuente: proveedor_mapa
+                    viable: true
         '400':
           $ref: '#/components/responses/SolicitudInvalida'
         '401':
@@ -979,6 +982,7 @@ components:
         - eta_minutos
         - calculado_en
         - fuente
+        - viable
       properties:
         origen:
           $ref: '#/components/schemas/PuntoGeografico'
@@ -998,6 +1002,9 @@ components:
           type: string
           enum: [proveedor_mapa, estimacion_local]
           description: Informa si se usó proveedor externo o fallback local.
+        viable:
+          type: boolean
+          description: Indica si el proveedor confirmó una ruta viable dentro de cobertura.
     ConsultaGeocodificacion:
       type: object
       additionalProperties: false

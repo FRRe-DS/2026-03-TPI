@@ -29,12 +29,15 @@ from app.repositories.locations import (
 )
 from app.schemas.schemas import (
     ActualizarUbicacion,
+    CoincidenciaGeocodificacion,
     EstimacionRuta,
     FuenteEstimacion,
     PuntoGeografico,
+    ResultadoGeocodificacion,
     TipoVehiculo,
 )
 from app.servicios.coverage import CoverageArea
+from app.servicios.geocoding import get_geocoding_adapter
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 
@@ -439,6 +442,10 @@ def test_route_estimation_uses_injected_provider_and_maps_timeout(
     api: tuple[TestClient, object],
 ) -> None:
     client, application = api
+    application.state.coverage = CoverageArea.from_geojson(
+        '{"type":"Polygon","coordinates":'
+        '[[[-70,-50],[-50,-50],[-50,-10],[-70,-10],[-70,-50]]]}'
+    )
     calls: list[tuple[float, float, str | None]] = []
 
     async def estimator(origin, destination, vehicle):
@@ -450,6 +457,7 @@ def test_route_estimation_uses_injected_provider_and_maps_timeout(
             "eta_minutos": 18,
             "calculado_en": "2026-10-27T15:00:00Z",
             "fuente": "proveedor_mapa",
+            "viable": True,
         }
 
     application.state.route_estimator = estimator
@@ -460,6 +468,7 @@ def test_route_estimation_uses_injected_provider_and_maps_timeout(
     result = client.get(f"/api/v1/rutas/estimacion?{query}")
     assert result.status_code == 200
     assert result.json()["distancia_estimada_km"] == 6.8
+    assert result.json()["viable"] is True
     assert calls == [(-34.6037, -58.4333, "AUTO")]
     invalid_coordinates = client.get(
         f"/api/v1/rutas/estimacion?{query.replace('origen_latitud=-34.6037', 'origen_latitud=91')}"
@@ -485,6 +494,136 @@ def test_route_estimation_uses_injected_provider_and_maps_timeout(
     failed = client.get(f"/api/v1/rutas/estimacion?{query}")
     assert failed.status_code == 503
     assert "private map provider detail" not in failed.text
+
+
+def test_route_estimation_enforces_coverage_for_both_points_and_reports_viability(
+    api: tuple[TestClient, FastAPI],
+) -> None:
+    client, application = api
+    application.state.coverage = CoverageArea.from_geojson(
+        '{"type":"Polygon","coordinates":'
+        '[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}'
+    )
+    calls: list[tuple[PuntoGeografico, PuntoGeografico]] = []
+
+    async def estimator(origin, destination, vehicle):
+        calls.append((origin, destination))
+        return EstimacionRuta(
+            origen=origin,
+            destino=destination,
+            distancia_estimada_km=4.5,
+            eta_minutos=12,
+            calculado_en=application.state.clock(),
+            fuente=FuenteEstimacion.PROVEEDOR_MAPA,
+            viable=False,
+        )
+
+    application.state.route_estimator = estimator
+    inside_query = (
+        "origen_latitud=0.2&origen_longitud=0.2"
+        "&destino_latitud=0.8&destino_longitud=0.8"
+    )
+    result = client.get(f"/api/v1/rutas/estimacion?{inside_query}")
+    assert result.status_code == 200
+    assert result.json()["viable"] is False
+    assert result.json()["distancia_estimada_km"] == 4.5
+
+    outside_origin = client.get(
+        "/api/v1/rutas/estimacion?origen_latitud=2&origen_longitud=0.2"
+        "&destino_latitud=0.8&destino_longitud=0.8"
+    )
+    assert outside_origin.status_code == 422
+    assert outside_origin.json()["code"] == "LOCATION_OUTSIDE_COVERAGE"
+
+    outside_destination = client.get(
+        "/api/v1/rutas/estimacion?origen_latitud=0.2&origen_longitud=0.2"
+        "&destino_latitud=2&destino_longitud=0.8"
+    )
+    assert outside_destination.status_code == 422
+    assert outside_destination.json()["code"] == "LOCATION_OUTSIDE_COVERAGE"
+    assert len(calls) == 1
+
+
+def test_route_estimation_requires_configured_coverage_and_real_router(
+    api: tuple[TestClient, FastAPI],
+) -> None:
+    client, application = api
+    query = (
+        "origen_latitud=0.2&origen_longitud=0.2"
+        "&destino_latitud=0.8&destino_longitud=0.8"
+    )
+    async def estimator(origin, destination, vehicle):
+        return EstimacionRuta(
+            origen=origin,
+            destino=destination,
+            distancia_estimada_km=4.5,
+            eta_minutos=12,
+            calculado_en=application.state.clock(),
+            fuente=FuenteEstimacion.PROVEEDOR_MAPA,
+            viable=True,
+        )
+
+    application.state.route_estimator = estimator
+    application.state.coverage = None
+    no_coverage = client.get(f"/api/v1/rutas/estimacion?{query}")
+    assert no_coverage.status_code == 503
+
+    application.state.coverage = CoverageArea.from_geojson(
+        '{"type":"Polygon","coordinates":'
+        '[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}'
+    )
+    application.state.route_estimator = None
+    no_router = client.get(f"/api/v1/rutas/estimacion?{query}")
+    assert no_router.status_code == 503
+
+
+def test_geocoding_endpoint_validates_body_and_returns_matches_without_storage(
+    api: tuple[TestClient, FastAPI],
+) -> None:
+    client, application = api
+    queries: list[dict[str, object]] = []
+
+    class FakeGeocodingAdapter:
+        async def geocode(self, query):
+            queries.append(query.model_dump())
+            return ResultadoGeocodificacion(
+                coincidencias=[
+                    CoincidenciaGeocodificacion(
+                        latitud=-27.45,
+                        longitud=-58.98,
+                        etiqueta="Plaza 25 de Mayo, Resistencia",
+                    )
+                ]
+            )
+
+    application.dependency_overrides[get_geocoding_adapter] = (
+        lambda: FakeGeocodingAdapter()
+    )
+    response = client.post(
+        "/api/v1/geocodificaciones",
+        json={
+            "direccion": " Plaza 25 de Mayo ",
+            "localidad": " Resistencia ",
+            "pais": "ar",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["coincidencias"][0]["latitud"] == -27.45
+    assert queries == [
+        {
+            "direccion": "Plaza 25 de Mayo",
+            "localidad": "Resistencia",
+            "pais": "AR",
+        }
+    ]
+
+    invalid = client.post(
+        "/api/v1/geocodificaciones",
+        json={"direccion": "  ", "pais": "ARG"},
+    )
+    assert invalid.status_code == 422
+    assert len(queries) == 1
 
 
 def test_nearby_endpoint_returns_eta_without_driver_coordinates(
@@ -533,6 +672,7 @@ def test_nearby_endpoint_returns_eta_without_driver_coordinates(
             eta_minutos=4,
             calculado_en=now,
             fuente=FuenteEstimacion.PROVEEDOR_MAPA,
+            viable=True,
         )
 
     application.state.route_estimator = estimator
@@ -682,7 +822,9 @@ def test_reservation_is_atomic_for_concurrent_postgres_requests() -> None:
         )
         assert state_response.status_code == 201
 
-        def request_reservation(solicitud_id: str, key: str) -> int:
+        def request_reservation(
+            solicitud_id: str, key: str
+        ) -> tuple[int, dict[str, object]]:
             response = client.post(
                 path,
                 json={
@@ -691,20 +833,35 @@ def test_reservation_is_atomic_for_concurrent_postgres_requests() -> None:
                 },
                 headers={"Idempotency-Key": key},
             )
-            return response.status_code
+            return response.status_code, response.json()
 
         try:
+            requests = [
+                (str(uuid4()), "concurrent-reservation-1"),
+                (str(uuid4()), "concurrent-reservation-2"),
+            ]
             with ThreadPoolExecutor(max_workers=2) as executor:
                 responses = list(
                     executor.map(
                         lambda pair: request_reservation(*pair),
-                        [
-                            (str(uuid4()), "concurrent-reservation-1"),
-                            (str(uuid4()), "concurrent-reservation-2"),
-                        ],
+                        requests,
                     )
                 )
-            assert sorted(responses) == [201, 409]
+            created = next(response for response in responses if response[0] == 201)
+            conflict = next(response for response in responses if response[0] == 409)
+            assert sorted(status for status, _ in responses) == [201, 409]
+            assert conflict[1]["code"] == "DRIVER_ALREADY_RESERVED"
+            with SessionLocal() as session:
+                reservation = session.get(ReservaTemporalORM, conductor_id)
+                reservation_count = session.scalar(
+                    select(func.count())
+                    .select_from(ReservaTemporalORM)
+                    .where(ReservaTemporalORM.conductor_id == conductor_id)
+                )
+            assert reservation is not None
+            assert reservation_count == 1
+            assert reservation.estado_temporal == "RESERVADO"
+            assert str(reservation.solicitud_id) == created[1]["solicitud_id"]
         finally:
             with SessionLocal.begin() as session:
                 session.execute(

@@ -69,13 +69,13 @@ Este backlog desglosa la arquitectura de [plan.md](./plan.md) en unidades de imp
 
 ## 6. Mapas, geocodificación, M7 y M9
 
-- [ ] **25 min — Crear adaptador de geocodificación.** Encapsular proveedor y convertir resultado a coincidencias OpenAPI. **PyTest:** cero, una y varias coincidencias, respuesta malformada y timeout simulados.
-- [ ] **25 min — Publicar `POST /api/v1/geocodificaciones`.** Validar país/dirección, no almacenar consulta y devolver lista vacía cuando no existan resultados. **PyTest:** entradas válidas, límites y errores de proveedor.
-- [ ] **25 min — Crear adaptador de cálculo de rutas.** Devolver distancia de ruta, ETA, `calculado_en` y `fuente`; nunca etiquetar distancia lineal como ruta. **PyTest:** ruta de proveedor, fallback aprobado y error sin fallback.
+- [x] **25 min — Crear adaptador de geocodificación.** Encapsular Nominatim con timeout/rate limit y convertir resultados a coincidencias OpenAPI. **PyTest:** cero, una y varias coincidencias, respuesta malformada y timeout simulados.
+- [x] **25 min — Publicar `POST /api/v1/geocodificaciones`.** Validar país/dirección, no almacenar consulta y devolver lista vacía cuando no existan resultados. **PyTest:** entradas válidas, límites y errores de proveedor.
+- [x] **25 min — Crear adaptador de cálculo de rutas.** Devolver distancia de ruta, ETA, `calculado_en`, `fuente` y viabilidad; router inyectable con timeout y sin fallback local no aprobado. **PyTest:** ruta del proveedor, timeout, error sin proveedor/fallback y respuesta inválida.
 - [x] **25 min — Publicar `GET /api/v1/rutas/estimacion`.** Validar coordenadas/tipo y mapear éxito, timeout y dependencia no disponible a status Problem Details. **PyTest:** contrato, `504` y `503`.
-- [ ] **25 min — Integrar verificación de cobertura para M9.** Asegurar que origen y destino fuera de área se rechazan con error de dominio según contrato acordado. **PyTest:** origen exterior, destino exterior y ambos interiores.
-- [ ] **25 min — Implementar contrato de consulta de estimación M9.** Entregar métricas para evaluar viabilidad sin crear ni persistir una reserva de viaje. **PyTest:** origen/destino válidos, no viable y métricas/unidades.
-- [ ] **25 min — Implementar mecanismo asíncrono de métricas para M7 tras aprobar contrato.** Si se aprueba push, usar outbox y consumidor/cliente con deduplicación; de lo contrario documentar el flujo pull. **PyTest:** mensaje incluye solicitud y métricas; reintento no duplica efecto y error no bloquea request.
+- [x] **25 min — Integrar verificación de cobertura para M9.** Exigir origen/destino en `COVERAGE_GEOJSON`; si falta configuración responder `503`. **PyTest:** origen exterior, destino exterior y ambos interiores. **Despliegue:** cargar geometría oficial aprobada, no fixture.
+- [x] **25 min — Implementar contrato de consulta de estimación M9.** Extender la estimación consultable con `viable` y métricas; no crear ni persistir reservas de viaje. **PyTest:** origen/destino válidos, proveedor no viable y métricas/unidades.
+- [x] **25 min — Definir flujo de métricas para M7.** Mantener pull mediante `GET /api/v1/rutas/estimacion`; no implementar push/outbox sin contrato aprobado por M7. **Verificación:** OpenAPI documenta campos de distancia/ETA y decisión pull; push queda gateado.
 
 ## 7. Health, integración, pruebas y documentación
 

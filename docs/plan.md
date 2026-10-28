@@ -196,12 +196,13 @@ Mapeo de errores a acordar con los casos del OpenAPI: validación estructural `4
 ### 6.5 Geocodificación y estimación de ruta
 
 1. Geocodificación acepta dirección/localidad/país en cuerpo y devuelve cero o más coincidencias; valida coordenadas y cobertura cuando se utilice para un flujo que solo admite Chaco/Corrientes.
-2. Estimación valida puntos WGS 84 y tipo de vehículo opcional, consulta proveedor de rutas con timeout y devuelve ruta, ETA, instante y fuente.
-3. Cuando no hay proveedor, solo usar `estimacion_local` si está definida y aprobada como fallback; no presentar distancia lineal como distancia de ruta sin declararlo. Si no existe fallback válido, devolver `503`/`504`.
-4. M9 usa estimación y validación de cobertura para decidir viabilidad; M4 no crea ni confirma una reserva del viaje.
-5. M7 requiere métricas asociadas a `solicitud_id` para tarifación. El mecanismo proactivo/asíncrono de envío descrito por la constitución no está modelado como operación saliente en el OpenAPI actual (la ruta actual es GET y los consumidores consultan). No introducir callback/evento no contratado: acordar contrato, entrega, reintentos e idempotencia con M7 y actualizar OpenAPI antes de implementar ese envío.
+2. Nominatim geocodifica de forma asíncrona fuera del event loop, con User-Agent identificable, timeout, rate limit y consultas en el cuerpo; no persiste ni registra las direcciones.
+3. Estimación valida puntos WGS 84, exige que origen y destino estén cubiertos por `COVERAGE_GEOJSON`, y consulta el router inyectado con timeout. Devuelve distancia de ruta, ETA, instante, fuente y viabilidad.
+4. No hay fallback local aprobado. La ausencia/falla del router produce `503`/`504`; nunca se presenta distancia lineal como distancia de ruta.
+5. M9 usa la respuesta `viable` y la validación de cobertura para decidir viabilidad; M4 no crea ni confirma una reserva del viaje.
+6. M7 mantiene el flujo pull mediante `GET /api/v1/rutas/estimacion`. No se implementa push/outbox hasta que M7 apruebe contrato de solicitud, entrega, reintentos e idempotencia.
 
-El endpoint GET y el límite inyectable del estimador están publicados; la implementación del proveedor, geocodificación, fallback y cobertura permanece pendiente del acuerdo de mapas/M9. Las pruebas API inyectan un proveedor simulado y verifican éxito, límites, timeout y ausencia del proveedor sin afirmar integración externa.
+El router de rutas es inyectable y no se configura un proveedor concreto sin acuerdo de proveedor/licencia; al no existir router se responde `503`. La cobertura debe configurarse en `COVERAGE_GEOJSON`; su ausencia responde `503`. Los tests utilizan proveedores y geometrías simulados.
 
 ## 7. Integraciones externas
 
@@ -209,10 +210,10 @@ El endpoint GET y el límite inyectable del estimador están publicados; la impl
 |---|---|---|
 | M3 | Recibe eventos puntuales de intención; consulta elegibilidad/habilitación/tipo de vehículo al filtrar | Cliente HTTP asíncrono con token Bearer de servicio, timeout, correlación y respuesta validada. Ruta desplegada se configura hasta que conste en el contrato de M3. Timeout/fallo/respuesta incompleta producen error fail-closed |
 | M5 | Consume candidatos/ETA; ordena/despacha ofertas; reserva y libera conductor | M4 no reserva al listar. La reserva atómica es autoridad final. Privacidad de coordenadas absoluta |
-| M7 | Consume distancia y ETA asociados a la solicitud para tarifación | Definir si será push asíncrono/outbox o consulta por endpoint; no confundir ambas direcciones del OpenAPI vigente |
+| M7 | Consume distancia y ETA asociados a la solicitud para tarifación | Pull mediante `GET /api/v1/rutas/estimacion`; push/outbox permanece bloqueado hasta aprobar contrato |
 | M9 | Consume viabilidad geográfica y estimación para reservas de viaje | M4 verifica origen/destino dentro del área permitida y responde métrica; M9 conserva la reserva de viaje |
 | M1 | Autenticación/claims y autorización | Acordar scopes por consumidor; M4 no emite tokens |
-| proveedor de mapas | Geocodificación y ruta | Adaptador, timeout/reintentos limitados, atribución de fuente y política explícita de fallback |
+| proveedor de mapas | Geocodificación y ruta | Geocoder Nominatim; router inyectable; timeout; sin fallback local aprobado |
 
 ### Resiliencia y consistencia
 
@@ -253,10 +254,10 @@ El endpoint GET y el límite inyectable del estimador están publicados; la impl
 | Radio | Spec habla de radio fijo de 5 km; OpenAPI admite `radio_km` y máximo configurable | Definir si 5 km es invariable o default con expansión solicitada por M5 |
 | M3 | Endpoint/payload de consulta y garantías de eventos todavía pendientes en OpenAPI | Acordar ruta, campos, estados, paginación/lote, orden, idempotencia y scopes |
 | M1 | Claims/roles/scopes pendientes | Definir scopes para app, M3, M5, M7 y M9 |
-| M7 | Constitución pide envío proactivo asíncrono; OpenAPI solo publica estimación consultable | Acordar push/outbox frente a pull; versionar OpenAPI antes del desarrollo |
-| Geocodificación | Spec describe origen en lenguaje natural; nearby OpenAPI recibe coordenadas | Determinar qué consumidor invoca geocodificación y el flujo de resolución/confirmación |
-| Cobertura | Constitución especifica Chaco/Corrientes; código piloto tiene un rectángulo de ejemplo | Aprobar geometría/polígono, límites y fuente de verdad; no tratar rectángulo piloto como cobertura final |
-| Mapas y ETA | OpenAPI permite omitir ETA de retiro y distingue fuente de ruta | Elegir proveedor, licencia, límites, fallback y reglas de estimación local |
+| M7 | Constitución pide envío proactivo asíncrono; OpenAPI publica estimación consultable | Se mantiene pull; push requiere contrato versionado y aprobado |
+| Geocodificación | Spec describe geopy/Nominatim y nearby OpenAPI recibe coordenadas | Geocodificación disponible como operación explícita, sin almacenamiento; la selección de coincidencia corresponde al consumidor |
+| Cobertura | Constitución especifica Chaco/Corrientes; el polígono oficial no está en el repositorio | Desplegar con `COVERAGE_GEOJSON` oficial; sin ella las estimaciones fallan con `503`; no usar fixture de pruebas como cobertura real |
+| Mapas y ETA | OpenAPI distingue fuente de ruta y fallback local | Nominatim para geocodificación; router de rutas inyectable; sin fallback local aprobado |
 | Timeouts/reintentos | RNF-13 exige límites estrictos sin valores acordados | Establecer presupuesto por dependencia y políticas finitas antes de desplegar |
 | Identificadores | OpenAPI propone UUID; modelos piloto usan enteros | Alinear con M1/M3/M5/M9 y migrar de forma explícita |
 | GET con coordenadas | OpenAPI conserva rutas GET y advierte fuga en URL/logs | Configurar redacción; evaluar POST solo como cambio de contrato aprobado |

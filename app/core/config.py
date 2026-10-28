@@ -34,12 +34,17 @@ class Settings(BaseSettings):
     m3_service_token: str | None = None
     m3_eligibility_path: str | None = None
     maps_timeout_seconds: PositiveFloat = 5.0
+    geocoding_timeout_seconds: PositiveFloat = 5.0
+    geocoding_user_agent: str = "m4-transporte-app"
+    geocoding_min_delay_seconds: PositiveFloat = 1.1
 
     @field_validator(
         "default_search_radius_km",
         "max_search_radius_km",
         "m3_timeout_seconds",
         "maps_timeout_seconds",
+        "geocoding_timeout_seconds",
+        "geocoding_min_delay_seconds",
     )
     @classmethod
     def positive_float_settings_must_be_finite(cls, value: float) -> float:
@@ -48,7 +53,9 @@ class Settings(BaseSettings):
         return value
 
     @model_validator(mode="after")
-    def validate_m3_configuration(self) -> "Settings":
+    def validate_external_service_configuration(self) -> "Settings":
+        if not self.geocoding_user_agent.strip():
+            raise ValueError("GEOCODING_USER_AGENT no puede estar vacío.")
         if self.max_search_radius_km < self.default_search_radius_km:
             raise ValueError(
                 "MAX_SEARCH_RADIUS_KM no puede ser menor que "
