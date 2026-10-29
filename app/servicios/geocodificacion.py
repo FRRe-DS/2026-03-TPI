@@ -110,4 +110,4 @@ def obtener_coordenadas(body:ConsultaGeocodificacion) -> dict: #aqui los paramet
         except (GeocoderTimedOut, GeopyError):
             # Actualizamos el timestamp igual para no reintentar instantáneamente si falló
             _ultimo_tiempo_consulta = time.time()
-            raise DependenciaNoDisponible("El servicio de mapas externo tardó demasiado o no está disponible.")# 503
+            raise DependenciaNoDisponible()# 503

@@ -15,11 +15,11 @@ import uuid
 from app.schemas.schemas import ConsultaGeocodificacion,ResultadoGeocodificacion
 from .handlerManager import registrar_manejadores_excepciones
 from app.servicios.geocodificacion import obtener_coordenadas
-
+import re
 Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya existia, no hace nada. 
 #Esto es para inicializar la base de datos y crear las tablas que se definan en models.py que hereden de Base.
 
-
+REQUEST_ID_PATTERN = re.compile(r'^[A-Za-z0-9._-]{1,128}$')
 # Configuración básica para que los mensajes salgan en tu terminal (consola)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -34,24 +34,30 @@ app = FastAPI(
 )
 #vinculamos los handlers de errores y excepciones personalizados
 registrar_manejadores_excepciones(app)
+
 #usamos el middleware para lograr respetar el string necesario en el head que documenta el contrato
 @app.middleware("http")
 async def agregar_o_respetar_request_id(request: Request, call_next):
-    # 1. ¿El cliente (Node.js u otro) mandó el header x-request-id?
-    # Si vino, lo usamos. Si no vino (viene vacío o None), generamos uno nuevo.
-    request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+    #Obtenemos el header que mandó el cliente
+    xrequest_id = request.headers.get("x-request-id")
+    
+    #Si no vino O no cumple con el formato del contrato, generamos uno nuevo
+    if not xrequest_id or not REQUEST_ID_PATTERN.match(xrequest_id):
+        xrequest_id = str(uuid.uuid4())
 
-    # 2. Mostramos en la terminal (logs) la petición junto con su ID de rastreo
+    #Lo guardamos en request.state para que handlerManage.py lo use como trace_id
+    request.state.request_id = xrequest_id
+
+    #Mostramos en la terminal (logs) la petición junto con su ID de rastreo (alineado con RNF-14)
     logger.info(
-        f"Endpoint: {request.method} {request.url.path} | X-Request-ID:"
-        f" {request_id}"
+        f"Endpoint: {request.method} {request.url.path} | X-Request-ID: {xrequest_id}"
     )
 
-    # 3. Dejamos que la petición continúe su camino hacia tus endpoints (ej. /ubicaciones)
+    #Dejamos que la petición continúe su camino hacia los endpoints
     response = await call_next(request)
 
-    # 4. Inyectamos obligatoriamente el X-Request-ID en las cabeceras (headers) de la respuesta
-    response.headers["x-request-id"] = request_id
+    #Inyectamos obligatoriamente el X-Request-ID en las cabeceras de la respuesta (éxito o error)[cite: 1]
+    response.headers["x-request-id"] = xrequest_id
 
     return response
 
