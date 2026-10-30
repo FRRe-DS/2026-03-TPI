@@ -18,7 +18,7 @@ from geopy.geocoders import Nominatim
 import threading
 import time
 from app.servicios.exceptionSemanticos import DependenciaNoDisponible
-from app.schemas.schemas import ConsultaGeocodificacion
+from app.esquemas.esquemas import ConsultaGeocodificacion
 
 # Variables para control de velocidad (Rate Limiting seguro para hilos)
 _lock = threading.Lock()
