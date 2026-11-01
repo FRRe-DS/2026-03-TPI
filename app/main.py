@@ -13,9 +13,9 @@ from fastapi import FastAPI, Request, APIRouter, HTTPException,Depends
 import logging,uuid,re
 from app.esquemas.esquemas import ConsultaGeocodificacion,ResultadoGeocodificacion, ConsultaEstimacionRuta, ResultadoEstimacionRuta,SolicitudReserva
 from errores.handlerManager import registrar_manejadores_excepciones
-from app.servicios.geocodificacion import obtener_coordenadas
+from app.servicios.proovedorGeocodif_Geopy import ProovedorGeoRef_Geopy
 from app.servicios.calculosDeEstimacion import CalculosDeViaje
-from app.servicios.ManejarReserva import RegistrarReserva
+from app.servicios.manejarReserva import RegistrarReserva
 from errores.idempotenciaManager import verificar_idempotencia
 Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya existia, no hace nada. 
 #Esto es para inicializar la base de datos y crear las tablas que se definan en models.py que hereden de Base.
@@ -79,12 +79,13 @@ ruta5 = APIRouter(prefix="/health/",tags=["Salud"])
             description="Consulta realizada; coincidencias puede ser una lista vacía.")
 def RealizarGeocodificacion(datos:ConsultaGeocodificacion):
     #si regla de negocio dictara solo argentina entonces aqui va la validacion y si da error es 422
-    resultado=obtener_coordenadas(datos)
+    resultado=ProovedorGeoRef_Geopy.buscar(datos)
     return resultado
 
 @ruta3.get("/estimacionruta",response_model=ResultadoEstimacionRuta,status_code=200,description="")
 async def RealizarCalculosEstimados(request:Request):
     #se pasa los headers o mejor dicho los params_query a un diccionario y comprobarlo con pydantic
+    #pydantic tiene metodos asociados para comprobar la variable, investigarlo
     datos=["los datos del query parameters del request"]
     resultado=CalculosDeViaje(datos)
     return resultado
