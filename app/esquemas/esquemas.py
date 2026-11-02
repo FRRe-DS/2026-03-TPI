@@ -65,7 +65,7 @@ class CoincidenciasGeolocalizacion(BaseModel):
     latitud: float =Field(...,ge=-90,le=90,description="latitud resultante con limitancias terricolas")
     longitud: float =Field(...,ge=-180,le=180,description="longitud resultante con limitancias terricolas")
     etiqueta: str =Field(...,description="direccion lenguaje natural el cual se asocia la coordenada")
-    confianza: int =Field(ge=0,le=1)
+    confianza: float =Field(ge=0,le=1)
     #son cosas que nos devuelve el servicio externo o el diccionario de ubicaciones, no es posible dejarlos en blanco
 
 class ResultadoGeocodificacion(BaseModel):

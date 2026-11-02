@@ -9,7 +9,7 @@ dependemos de clases abstractas no de clases concretas, implementamos solid de e
 class GeoProveedor(ABC):
     
     @abstractmethod
-    async def buscar(self, body: ConsultaGeocodificacion) -> dict:
+    def buscar(self, body: ConsultaGeocodificacion) -> dict:
         """
         Contrato obligatorio para cualquier proveedor de geolocalización.
         Debe retornar un diccionario con la lista de coincidencias estructuradas.

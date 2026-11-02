@@ -11,9 +11,9 @@ from db.database_config import engine, Base #se importan para crear las tablas e
 from modelos import db_models #se importa models para que se ejecute el codigo de models.py y se creen las tablas en la base de datos
 from fastapi import FastAPI, Request, APIRouter, HTTPException,Depends
 import logging,uuid,re
-from app.esquemas.esquemas import ConsultaGeocodificacion,ResultadoGeocodificacion, ConsultaEstimacionRuta, ResultadoEstimacionRuta,SolicitudReserva
+from app.esquemas.esquemas import *
 from errores.handlerManager import registrar_manejadores_excepciones
-from app.servicios.proovedorGeocodif_Geopy import ProovedorGeoRef_Geopy
+from app.servicios.cadenaDeProveedores import AdaptadorEncadenado
 from app.servicios.calculosDeEstimacion import CalculosDeViaje
 from app.servicios.manejarReserva import RegistrarReserva
 from errores.idempotenciaManager import verificar_idempotencia
@@ -74,12 +74,12 @@ ruta2 = APIRouter(prefix="/api/v1",tags=["Geocodificacion"])
 ruta3 = APIRouter(prefix="/api/v1",tags=["Rutas"])
 ruta4 = APIRouter(prefix="/api/v1",tags=["Disponibilidad"])
 ruta5 = APIRouter(prefix="/health/",tags=["Salud"])
-
+adaptadorJerarquico = AdaptadorEncadenado()
 @ruta2.post("/geocodificaciones",response_model=ResultadoGeocodificacion,status_code=200,
             description="Consulta realizada; coincidencias puede ser una lista vacía.")
 def RealizarGeocodificacion(datos:ConsultaGeocodificacion):
     #si regla de negocio dictara solo argentina entonces aqui va la validacion y si da error es 422
-    resultado=ProovedorGeoRef_Geopy.buscar(datos)
+    resultado = adaptadorJerarquico.resolver(datos)
     return resultado
 
 @ruta3.get("/estimacionruta",response_model=ResultadoEstimacionRuta,status_code=200,description="")

@@ -75,12 +75,15 @@ class ProovedorGeoRef_Geopy(GeoProveedor):
 
                 # Aquí se mapeará el resultado bruto de Geopy al formato JSON definitivo que exija el contrato
                 geocoincidencias = []
+                
                 for loc in ubicaciones:
+                    raw_importance = loc.raw.get("importance")
+                    confianza = max(0.0, min(1.0, raw_importance if raw_importance is not None else 1.0))
                     geocoincidencias.append({
                         "latitud": loc.latitude,
                         "longitud": loc.longitude,
                         "etiqueta": loc.address,
-                        "confianza": 1
+                        "confianza": confianza
                     })
 
                 return {"coincidencias": geocoincidencias}

@@ -1,0 +1,2051 @@
+{
+  "resistencia": [
+    {
+      "alias": [
+        "plaza 25 de mayo",
+        "plaza 25",
+        "plaza central",
+        "plaza principal",
+        "plaza mayor",
+        "plaza 25 de mayo resistencia",
+        "plaza de mayo resistencia",
+        "25 de mayo chaco",
+        "plaza 25 resistencia chaco"
+      ],
+      "latitud": -27.45114,
+      "longitud": -58.98651,
+      "etiqueta": "Plaza 25 de Mayo de 1810, microcentro, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "casa de gobierno",
+        "casa de gobierno chaco",
+        "gobernacion",
+        "gobierno provincial",
+        "casa del gobernador",
+        "casa de gobierno resistencia",
+        "sede del gobierno del chaco",
+        "gobernacion de resistencia"
+      ],
+      "latitud": -27.44969,
+      "longitud": -58.98718,
+      "etiqueta": "Casa de Gobierno de la Provincia del Chaco, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "utn resistencia",
+        "utn",
+        "facultad regional resistencia",
+        "utn frre",
+        "universidad tecnologica",
+        "universidad tecnologica nacional",
+        "facultad tecnologica",
+        "tecnologica resistencia",
+        "utn chaco",
+        "frre"
+      ],
+      "latitud": -27.45113,
+      "longitud": -58.97904,
+      "etiqueta": "Universidad Tecnológica Nacional, Facultad Regional Resistencia, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "anexo utn",
+        "utn anexo",
+        "anexo facultad regional resistencia",
+        "anexo tecnologica",
+        "utn edificio anexo",
+        "universidad tecnologica anexo resistencia"
+      ],
+      "latitud": -27.44791,
+      "longitud": -58.97553,
+      "etiqueta": "Anexo de la Universidad Tecnológica Nacional, Facultad Regional Resistencia, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.98
+    },
+    {
+      "alias": [
+        "unne resistencia",
+        "campus resistencia",
+        "universidad nacional del nordeste",
+        "unne chaco",
+        "campus unne",
+        "universidad del nordeste",
+        "facultades unne resistencia",
+        "campus universitario resistencia",
+        "unne campus resistencia"
+      ],
+      "latitud": -27.46425,
+      "longitud": -58.98424,
+      "etiqueta": "Campus Resistencia de la Universidad Nacional del Nordeste, Av. Las Heras y entorno universitario, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "hospital perrando",
+        "perrando",
+        "hospital julio cesar perrando",
+        "hospital doctor julio c perrando",
+        "hospital regional",
+        "hospital publico resistencia",
+        "hospital central resistencia",
+        "hospital perrando chaco",
+        "hospital j c perrando",
+        "el perrando",
+        "av 9 de julio 1100",
+        "9 de julio 1100 resistencia",
+        "avenida 9 de julio al 1100"
+      ],
+      "latitud": -27.45826,
+      "longitud": -58.97569,
+      "etiqueta": "Hospital Julio César Perrando, Av. 9 de Julio 1100, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "terminal resistencia",
+        "terminal de omnibus",
+        "terminal de colectivos",
+        "terminal de micros",
+        "terminal de pasajeros",
+        "terminal resistencia chaco",
+        "estacion terminal resistencia",
+        "terminal omnibus resistencia",
+        "etor",
+        "av mac lean 2347",
+        "mac lean 2347"
+      ],
+      "latitud": -27.45628,
+      "longitud": -59.02245,
+      "etiqueta": "Estación Terminal de Ómnibus de Resistencia (ETOR), Av. Mac Lean 2347 y Av. Malvinas Argentinas, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "aeropuerto resistencia",
+        "aeropuerto internacional resistencia",
+        "aeropuerto de resistencia",
+        "aeropuerto chaco",
+        "aeropuerto resistencia chaco",
+        "aeropuerto res",
+        "sare",
+        "aeropuerto internacional de resistencia",
+        "aeropuerto general jose de san martin",
+        "general jose de san martin"
+      ],
+      "latitud": -27.44769,
+      "longitud": -59.05491,
+      "etiqueta": "Aeropuerto Internacional de Resistencia, RN 11 km 1003, código IATA RES, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "parque 2 de febrero",
+        "parque dos de febrero",
+        "parque 2 febrero",
+        "parque del 2 de febrero",
+        "parque intercultural 2 de febrero",
+        "parque dos febrero",
+        "parque 2 de febrero resistencia"
+      ],
+      "latitud": -27.43768,
+      "longitud": -58.98443,
+      "etiqueta": "Parque Intercultural 2 de Febrero, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "plaza 9 de julio",
+        "plaza nueve de julio",
+        "9 de julio resistencia",
+        "plaza 9 julio",
+        "plaza nueve julio resistencia",
+        "plaza av belgrano",
+        "av belgrano 400"
+      ],
+      "latitud": -27.45116,
+      "longitud": -58.9943,
+      "etiqueta": "Plaza 9 de Julio, sector de Av. Belgrano al 400, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.98
+    },
+    {
+      "alias": [
+        "plaza 12 de octubre",
+        "plaza doce de octubre",
+        "12 de octubre resistencia",
+        "plaza 12 octubre",
+        "plaza doce octubre"
+      ],
+      "latitud": -27.44419,
+      "longitud": -58.98652,
+      "etiqueta": "Plaza 12 de Octubre, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "catedral",
+        "catedral resistencia",
+        "catedral san fernando rey",
+        "iglesia catedral",
+        "san fernando rey",
+        "catedral del chaco",
+        "iglesia principal resistencia",
+        "catedral de resistencia"
+      ],
+      "latitud": -27.45087,
+      "longitud": -58.98823,
+      "etiqueta": "Catedral de San Fernando Rey, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "municipalidad",
+        "municipalidad resistencia",
+        "muni resistencia",
+        "municipio resistencia",
+        "comuna resistencia",
+        "palacio municipal",
+        "municipalidad de resistencia chaco"
+      ],
+      "latitud": -27.45427,
+      "longitud": -58.98034,
+      "etiqueta": "Municipalidad de Resistencia, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "chaco for ever",
+        "chaco forever",
+        "for ever",
+        "club chaco for ever",
+        "gigante de la avenida",
+        "estadio chaco for ever",
+        "estadio juan alberto garcia",
+        "gigante avenida",
+        "cancha de for ever",
+        "chaco for ever resistencia",
+        "av 9 de julio 2227",
+        "9 de julio 2222",
+        "avenida 9 de julio 2227"
+      ],
+      "latitud": -27.46912,
+      "longitud": -58.9666,
+      "etiqueta": "Estadio Juan Alberto García, Club Atlético Chaco For Ever, Av. 9 de Julio 2227, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "estadio centenario",
+        "centenario",
+        "club sarmiento",
+        "sarmiento de resistencia",
+        "club atletico sarmiento",
+        "cancha de sarmiento",
+        "estadio de sarmiento resistencia"
+      ],
+      "latitud": -27.44335,
+      "longitud": -59.01083,
+      "etiqueta": "Estadio Centenario, Club Atlético Sarmiento, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.98
+    },
+    {
+      "alias": [
+        "shopping sarmiento",
+        "sarmiento shopping",
+        "sarmiento mall",
+        "centro comercial sarmiento",
+        "shopping de resistencia",
+        "cine shopping sarmiento",
+        "sarmiento shopping mall",
+        "av sarmiento shopping resistencia"
+      ],
+      "latitud": -27.43153,
+      "longitud": -58.96306,
+      "etiqueta": "Sarmiento Shopping Mall, Av. Sarmiento, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.98
+    },
+    {
+      "alias": [
+        "plazoleta javier lopez",
+        "plazoleta profesor javier lopez",
+        "plazoleta villa el dorado",
+        "plaza villa el dorado",
+        "javier lopez resistencia"
+      ],
+      "latitud": -27.46703,
+      "longitud": -59.00099,
+      "etiqueta": "Plazoleta Profesor Javier López, barrio Villa El Dorado, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.98
+    },
+    {
+      "alias": [
+        "club atletico san fernando",
+        "club san fernando",
+        "sanfer",
+        "san fernando resistencia",
+        "estadio san fernando",
+        "cancha san fernando"
+      ],
+      "latitud": -27.44325,
+      "longitud": -58.97542,
+      "etiqueta": "Club Atlético San Fernando, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.97
+    },
+    {
+      "alias": [
+        "parque de la democracia",
+        "parque democracia",
+        "parque de la juventud",
+        "parque sarmiento",
+        "democracia resistencia",
+        "parque av sarmiento 2200",
+        "av sarmiento 2200"
+      ],
+      "latitud": -27.4272,
+      "longitud": -58.9825,
+      "etiqueta": "Parque de la Democracia y la Juventud, Av. Sarmiento 2200, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.9
+    },
+    {
+      "alias": [
+        "plaza espana",
+        "plaza de espana",
+        "plaza espana resistencia",
+        "plaza san martin y colon",
+        "plaza de la iglesia san javier"
+      ],
+      "latitud": -27.4527,
+      "longitud": -58.9913,
+      "etiqueta": "Plaza España, entorno de Av. San Martín y calle Colón, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.84
+    },
+    {
+      "alias": [
+        "plaza belgrano",
+        "plaza manuel belgrano",
+        "plaza belgrano resistencia",
+        "plaza de french",
+        "plaza french resistencia"
+      ],
+      "latitud": -27.4497,
+      "longitud": -58.9795,
+      "etiqueta": "Plaza Manuel Belgrano, calle French, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.88
+    },
+    {
+      "alias": [
+        "fogon de los arrieros",
+        "el fogon",
+        "fogon resistencia",
+        "asociacion el fogon de los arrieros",
+        "brown 350",
+        "avenida brown 350"
+      ],
+      "latitud": -27.451,
+      "longitud": -58.9827,
+      "etiqueta": "El Fogón de los Arrieros, Brown 350, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.9
+    },
+    {
+      "alias": [
+        "cecual",
+        "centro cultural alternativo",
+        "cecual resistencia",
+        "santa maria de oro 471",
+        "oro 471",
+        "centro cultural alternativo resistencia"
+      ],
+      "latitud": -27.452,
+      "longitud": -58.9857,
+      "etiqueta": "Centro Cultural Alternativo (CECUAL), Santa María de Oro 471, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.93
+    },
+    {
+      "alias": [
+        "guido miranda",
+        "complejo cultural guido miranda",
+        "teatro guido miranda",
+        "el guido",
+        "colon 164",
+        "cine teatro sep"
+      ],
+      "latitud": -27.451,
+      "longitud": -58.9893,
+      "etiqueta": "Complejo Cultural Guido Miranda, Colón 164, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.93
+    },
+    {
+      "alias": [
+        "muba",
+        "museo rene brusau",
+        "museo rene bruseau",
+        "museo de bellas artes resistencia",
+        "museo provincial de bellas artes",
+        "museo de arte resistencia"
+      ],
+      "latitud": -27.4496,
+      "longitud": -58.9862,
+      "etiqueta": "Museo Provincial de Bellas Artes René Bruseau (MUBA), Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.9
+    },
+    {
+      "alias": [
+        "centro cultural nordeste",
+        "ccn unne",
+        "centro cultural nordeste resistencia",
+        "arturo illia 355",
+        "illia 355"
+      ],
+      "latitud": -27.451,
+      "longitud": -58.9865,
+      "etiqueta": "Centro Cultural Nordeste de la UNNE, Arturo Illia 355, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.88
+    },
+    {
+      "alias": [
+        "shopping la feria",
+        "la feria shopping",
+        "shopping las heras",
+        "paseo la feria",
+        "las heras 175",
+        "shopping la feria resistencia"
+      ],
+      "latitud": -27.458,
+      "longitud": -58.9835,
+      "etiqueta": "Shopping La Feria, Av. Las Heras 175, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.89
+    },
+    {
+      "alias": [
+        "sanatorio guemes",
+        "guemes 501",
+        "sanatorio guemes resistencia"
+      ],
+      "latitud": -27.4522,
+      "longitud": -58.984,
+      "etiqueta": "Sanatorio Güemes, Güemes 501, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.91
+    },
+    {
+      "alias": [
+        "sanatorio chaco",
+        "sanatorio chaco resistencia",
+        "almirante brown 315",
+        "brown 315",
+        "sanatorio brown"
+      ],
+      "latitud": -27.4509,
+      "longitud": -58.9831,
+      "etiqueta": "Sanatorio Chaco, Almirante Brown 315, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.91
+    },
+    {
+      "alias": [
+        "sanatorio modelo",
+        "modelo resistencia",
+        "sanatorio modelo resistencia",
+        "avenida sarmiento 184",
+        "av sarmiento 184"
+      ],
+      "latitud": -27.4488,
+      "longitud": -58.9808,
+      "etiqueta": "Sanatorio Modelo, Av. Sarmiento 184, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.9
+    },
+    {
+      "alias": [
+        "sanatorio sarmiento",
+        "sarmiento 391",
+        "av sarmiento 391",
+        "sanatorio sarmiento resistencia"
+      ],
+      "latitud": -27.4472,
+      "longitud": -58.9804,
+      "etiqueta": "Sanatorio Sarmiento, Av. Sarmiento 391, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.89
+    },
+    {
+      "alias": [
+        "hospital pediatrico",
+        "hospital pediatrico castelan",
+        "hospital avelino castelan",
+        "avelino l castelan",
+        "hospital de ninos resistencia",
+        "velez sarsfield 150"
+      ],
+      "latitud": -27.4458,
+      "longitud": -58.9822,
+      "etiqueta": "Hospital Pediátrico Dr. Avelino Lorenzo Castelán, Av. Vélez Sarsfield 150, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.91
+    },
+    {
+      "alias": [
+        "cordis",
+        "instituto del corazon",
+        "instituto de corazon resistencia",
+        "cordis resistencia",
+        "pellegrini 637",
+        "carlos pellegrini 637"
+      ],
+      "latitud": -27.4524,
+      "longitud": -58.9829,
+      "etiqueta": "CORDIS - Instituto del Corazón, Carlos Pellegrini 637, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.88
+    },
+    {
+      "alias": [
+        "parroquia san francisco javier",
+        "iglesia san francisco javier",
+        "san javier resistencia",
+        "colon 428",
+        "parroquia san javier"
+      ],
+      "latitud": -27.452,
+      "longitud": -58.991,
+      "etiqueta": "Parroquia San Francisco Javier, Colón 428, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.91
+    },
+    {
+      "alias": [
+        "parroquia maria auxiliadora",
+        "iglesia maria auxiliadora",
+        "maria auxiliadora resistencia",
+        "av italia 310",
+        "italia 310"
+      ],
+      "latitud": -27.4517,
+      "longitud": -58.9798,
+      "etiqueta": "Parroquia María Auxiliadora, Av. Italia 310, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.9
+    },
+    {
+      "alias": [
+        "domo del centenario",
+        "domo zitto segovia",
+        "museo de las esculturas urbanas del mundo",
+        "museum resistencia",
+        "museo esculturas resistencia",
+        "domo resistencia"
+      ],
+      "latitud": -27.4369,
+      "longitud": -58.9808,
+      "etiqueta": "Domo del Centenario Zitto Segovia y MusEUM, Av. de los Inmigrantes, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.91
+    },
+    {
+      "alias": [
+        "club regatas resistencia",
+        "regatas resistencia",
+        "club de regatas",
+        "regatas chaco",
+        "av avalos 1080"
+      ],
+      "latitud": -27.4386,
+      "longitud": -58.982,
+      "etiqueta": "Club de Regatas Resistencia, Av. Ávalos 1080, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.84
+    },
+    {
+      "alias": [
+        "laguna arguello",
+        "laguna ar guello",
+        "laguna de arguello resistencia",
+        "paseo laguna arguello"
+      ],
+      "latitud": -27.4443,
+      "longitud": -58.992,
+      "etiqueta": "Laguna Argüello, espacio verde urbano, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.82
+    },
+    {
+      "alias": [
+        "peatonal illia",
+        "peatonal juan domingo peron",
+        "peatonal illia peron",
+        "peatonal resistencia",
+        "illia y peron",
+        "juan domingo peron peatonal"
+      ],
+      "latitud": -27.4512,
+      "longitud": -58.9867,
+      "etiqueta": "Peatonal Juan Domingo Perón y Arturo Illia, microcentro de Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.85
+    },
+    {
+      "alias": [
+        "avenida alberdi 500",
+        "av alberdi 500",
+        "alberdi al 500",
+        "av alberdi y brown",
+        "avenida alberdi resistencia"
+      ],
+      "latitud": -27.4527,
+      "longitud": -58.9813,
+      "etiqueta": "Av. Alberdi al 500, tramo céntrico próximo a Brown, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.76
+    },
+    {
+      "alias": [
+        "avenida 9 de julio 1500",
+        "av 9 de julio 1500",
+        "9 de julio al 1500",
+        "nueve de julio 1500 resistencia"
+      ],
+      "latitud": -27.463,
+      "longitud": -58.975,
+      "etiqueta": "Av. 9 de Julio al 1500, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.74
+    },
+    {
+      "alias": [
+        "avenida 25 de mayo 800",
+        "av 25 de mayo 800",
+        "25 de mayo al 800",
+        "veinticinco de mayo resistencia"
+      ],
+      "latitud": -27.45,
+      "longitud": -58.9795,
+      "etiqueta": "Av. 25 de Mayo al 800, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.75
+    },
+    {
+      "alias": [
+        "avenida sarmiento 1200",
+        "av sarmiento 1200",
+        "sarmiento al 1200",
+        "sarmiento 1200 resistencia"
+      ],
+      "latitud": -27.4395,
+      "longitud": -58.982,
+      "etiqueta": "Av. Sarmiento al 1200, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.74
+    },
+    {
+      "alias": [
+        "avenida alberdi y peatonal",
+        "alberdi y peron",
+        "alberdi y illia",
+        "esquina alberdi peron",
+        "av alberdi esquina peatonal"
+      ],
+      "latitud": -27.4517,
+      "longitud": -58.981,
+      "etiqueta": "Esquina de Av. Alberdi y Peatonal Juan Domingo Perón, Resistencia, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.76
+    }
+  ],
+  "barranqueras": [
+    {
+      "alias": [
+        "municipalidad barranqueras",
+        "municipalidad",
+        "muni barranqueras",
+        "municipio barranqueras",
+        "comuna barranqueras",
+        "palacio municipal barranqueras",
+        "municipalidad de barranqueras chaco"
+      ],
+      "latitud": -27.48836,
+      "longitud": -58.92952,
+      "etiqueta": "Municipalidad de Barranqueras, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "hospital eva peron",
+        "eva peron",
+        "hospital eva",
+        "hospital de barranqueras",
+        "hospital barranqueras",
+        "eva peron barranqueras",
+        "hospital provincial barranqueras",
+        "hospital av 9 de julio",
+        "hospital eva peron chaco",
+        "av 9 de julio 4902",
+        "9 de julio 4902 barranqueras"
+      ],
+      "latitud": -27.48997,
+      "longitud": -58.94362,
+      "etiqueta": "Hospital Eva Perón, Av. 9 de Julio 4902, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "centro de salud pedro biolchi",
+        "pedro biolchi",
+        "biolchi",
+        "centro regional pedro biolchi",
+        "centro de referencia pedro biolchi",
+        "centro de salud barranqueras",
+        "centro medico biolchi",
+        "sala pedro biolchi",
+        "biolchi barranqueras",
+        "av laprida 5600",
+        "laprida 5600 barranqueras",
+        "centro de referencia dr pedro biolchi 5602",
+        "avenida laprida al 5600",
+        "laprida al 5600 barranqueras"
+      ],
+      "latitud": -27.48876,
+      "longitud": -58.92995,
+      "etiqueta": "Centro de Salud y Referencia Dr. Pedro Biolchi, Av. Laprida 5600, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "plaza sarmiento",
+        "plaza domingo faustino sarmiento",
+        "plaza sarmiento barranqueras",
+        "sarmiento barranqueras",
+        "plaza central barranqueras",
+        "plaza principal barranqueras",
+        "plaza del centro barranqueras"
+      ],
+      "latitud": -27.4851,
+      "longitud": -58.9309,
+      "etiqueta": "Plaza Domingo Faustino Sarmiento, centro de Barranqueras, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.86
+    },
+    {
+      "alias": [
+        "club nautico barranqueras",
+        "nautico barranqueras",
+        "club nautico",
+        "nautico",
+        "marina barranqueras",
+        "puerto deportivo barranqueras",
+        "club de nautica barranqueras"
+      ],
+      "latitud": -27.46908,
+      "longitud": -58.89868,
+      "etiqueta": "Club Náutico Barranqueras, zona ribereña del riacho Barranqueras, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "don orione",
+        "club don orione",
+        "don orione barranqueras",
+        "don orione athletico club",
+        "estadio don orione",
+        "cancha de don orione",
+        "club atletico don orione"
+      ],
+      "latitud": -27.48523,
+      "longitud": -58.92561,
+      "etiqueta": "Estadio del Don Orione Athletico Club, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.98
+    },
+    {
+      "alias": [
+        "juzgado de paz barranqueras",
+        "juzgado de paz",
+        "juzgado barranqueras",
+        "justicia de paz barranqueras",
+        "tribunales de barranqueras"
+      ],
+      "latitud": -27.49348,
+      "longitud": -58.93902,
+      "etiqueta": "Juzgado de Paz de Barranqueras, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.97
+    },
+    {
+      "alias": [
+        "vacunatorio municipal barranqueras",
+        "vacunatorio barranqueras",
+        "vacunatorio municipal",
+        "av 9 de julio 5370",
+        "9 de julio 5370"
+      ],
+      "latitud": -27.4952,
+      "longitud": -58.9435,
+      "etiqueta": "Vacunatorio Municipal de Barranqueras, Av. 9 de Julio 5370, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.89
+    },
+    {
+      "alias": [
+        "centro integral de salud mental don orione",
+        "centro de salud mental don orione",
+        "don orione salud mental",
+        "salud mental barranqueras",
+        "pasteur 4615"
+      ],
+      "latitud": -27.5015,
+      "longitud": -58.937,
+      "etiqueta": "Centro Integral de Salud Mental y Adicciones Don Orione, Av. Pasteur 4615, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.86
+    },
+    {
+      "alias": [
+        "centro de salud villa forestacion",
+        "sala villa forestacion",
+        "centro salud forestacion",
+        "av 9 de julio 5400",
+        "9 de julio 5400"
+      ],
+      "latitud": -27.4962,
+      "longitud": -58.9415,
+      "etiqueta": "Centro de Salud Villa Forestación, Av. 9 de Julio 5400, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.87
+    },
+    {
+      "alias": [
+        "centro de salud barrio las malvinas",
+        "sala las malvinas",
+        "centro de salud 4 de junio",
+        "4 de junio barranqueras",
+        "av 9 de julio 5180",
+        "9 de julio 5180"
+      ],
+      "latitud": -27.493,
+      "longitud": -58.943,
+      "etiqueta": "Centro de Salud Barrio Las Malvinas - 4 de Junio, Av. 9 de Julio 5180, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.88
+    },
+    {
+      "alias": [
+        "centro medico joaquin v gonzalez",
+        "instituto categoria iii",
+        "centro medico barranqueras",
+        "joaquin v gonzalez 705",
+        "gonzalez 705"
+      ],
+      "latitud": -27.487,
+      "longitud": -58.932,
+      "etiqueta": "Centro Médico - Instituto Categoría III, Joaquín V. González 705, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.84
+    },
+    {
+      "alias": [
+        "comisaria primera barranqueras",
+        "comisaria 1 barranqueras",
+        "primera comisaria",
+        "seccional primera barranqueras",
+        "av sebastian gaboto 802",
+        "gaboto 802"
+      ],
+      "latitud": -27.483,
+      "longitud": -58.923,
+      "etiqueta": "Comisaría Primera de Barranqueras, Av. Sebastián Gaboto 802, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.87
+    },
+    {
+      "alias": [
+        "axion barranqueras",
+        "axion keops",
+        "keops",
+        "estacion axion laprida",
+        "laprida y diagonal eva peron",
+        "diagonal eva peron 750"
+      ],
+      "latitud": -27.488,
+      "longitud": -58.932,
+      "etiqueta": "Estación de Servicio AXION KEOPS, esquina Av. Laprida y Diagonal Eva Perón 750, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.86
+    },
+    {
+      "alias": [
+        "av 9 de julio 4200 barranqueras",
+        "avenida 9 de julio al 4200",
+        "9 de julio 4200 barranqueras",
+        "nueve de julio 4200"
+      ],
+      "latitud": -27.486,
+      "longitud": -58.945,
+      "etiqueta": "Av. 9 de Julio al 4200, tramo urbano, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.73
+    },
+    {
+      "alias": [
+        "av 9 de julio 5200 barranqueras",
+        "avenida 9 de julio al 5200",
+        "9 de julio 5200 barranqueras",
+        "nueve de julio 5200"
+      ],
+      "latitud": -27.493,
+      "longitud": -58.943,
+      "etiqueta": "Av. 9 de Julio al 5200, tramo urbano, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.73
+    },
+    {
+      "alias": [
+        "av laprida 700 barranqueras",
+        "avenida laprida 700",
+        "laprida al 700",
+        "laprida 701 puerto"
+      ],
+      "latitud": -27.4828,
+      "longitud": -58.934,
+      "etiqueta": "Av. Laprida al 700, acceso al Puerto de Barranqueras, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.82
+    },
+    {
+      "alias": [
+        "diag eva peron 750",
+        "diagonal eva peron barranqueras",
+        "eva peron y laprida",
+        "diagonal eva peron tramo comercial barranqueras",
+        "diagonal eva peron y laprida barranqueras"
+      ],
+      "latitud": -27.488,
+      "longitud": -58.932,
+      "etiqueta": "Diagonal Eva Perón al 750, esquina con Av. Laprida, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.82
+    },
+    {
+      "alias": [
+        "av sebastian gaboto 800",
+        "avenida gaboto 800",
+        "gaboto al 800",
+        "gaboto y acceso puerto"
+      ],
+      "latitud": -27.483,
+      "longitud": -58.923,
+      "etiqueta": "Av. Sebastián Gaboto al 800, entorno de la Comisaría Primera, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.82
+    },
+    {
+      "alias": [
+        "av san martin 4500 barranqueras",
+        "avenida san martin al 4500",
+        "san martin 4500 barranqueras",
+        "san martin barranqueras"
+      ],
+      "latitud": -27.49,
+      "longitud": -58.929,
+      "etiqueta": "Av. San Martín al 4500, tramo urbano de Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.72
+    },
+    {
+      "alias": [
+        "calle fray mocho 1000 barranqueras",
+        "fray mocho 1001",
+        "fray mocho al 1000",
+        "plaza sarmiento fray mocho"
+      ],
+      "latitud": -27.4851,
+      "longitud": -58.9307,
+      "etiqueta": "Fray Mocho al 1000, frente a Plaza Sarmiento, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.9
+    },
+    {
+      "alias": [
+        "av laprida y fray mocho",
+        "laprida y fray mocho barranqueras",
+        "esquina laprida fray mocho"
+      ],
+      "latitud": -27.486,
+      "longitud": -58.93,
+      "etiqueta": "Esquina de Av. Laprida y Fray Mocho, centro de Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.74
+    },
+    {
+      "alias": [
+        "calle belgrano 1000 barranqueras",
+        "belgrano al 1000 barranqueras",
+        "general belgrano 1000",
+        "belgrano barranqueras centro"
+      ],
+      "latitud": -27.485,
+      "longitud": -58.928,
+      "etiqueta": "General Belgrano al 1000, área céntrica de Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.72
+    },
+    {
+      "alias": [
+        "av espana barranqueras",
+        "avenida espana barranqueras",
+        "av espana al 600",
+        "avenida espana 600"
+      ],
+      "latitud": -27.487,
+      "longitud": -58.927,
+      "etiqueta": "Av. España al 600, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.7
+    },
+    {
+      "alias": [
+        "av castelli barranqueras",
+        "avenida castelli barranqueras",
+        "castelli al 1400 barranqueras",
+        "av castelli 1400"
+      ],
+      "latitud": -27.493,
+      "longitud": -58.934,
+      "etiqueta": "Av. Castelli al 1400, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.7
+    },
+    {
+      "alias": [
+        "av 9 de julio y laprida barranqueras",
+        "9 de julio esquina laprida",
+        "esquina laprida 9 de julio",
+        "cruce avenida 9 de julio laprida"
+      ],
+      "latitud": -27.4895,
+      "longitud": -58.941,
+      "etiqueta": "Cruce de Av. 9 de Julio y Av. Laprida, Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.75
+    },
+    {
+      "alias": [
+        "av 9 de julio 4600 barranqueras",
+        "avenida 9 de julio al 4600",
+        "9 de julio 4600 barranqueras",
+        "nueve de julio 4600"
+      ],
+      "latitud": -27.4878,
+      "longitud": -58.9442,
+      "etiqueta": "Av. 9 de Julio al 4600, tramo urbano de Barranqueras, Chaco",
+      "provincia": "chaco",
+      "pais": "ar",
+      "confianza": 0.69
+    }
+  ],
+  "corrientes": [
+    {
+      "alias": [
+        "plaza 25 de mayo",
+        "plaza 25",
+        "plaza central",
+        "plaza principal",
+        "plaza mayor",
+        "plaza 25 de mayo corrientes",
+        "plaza de mayo corrientes",
+        "25 de mayo corrientes capital",
+        "plaza 25 corrientes"
+      ],
+      "latitud": -27.46335,
+      "longitud": -58.83951,
+      "etiqueta": "Plaza 25 de Mayo, centro histórico y cívico, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "casa de gobierno",
+        "casa de gobierno corrientes",
+        "gobernacion corrientes",
+        "gobierno provincial corrientes",
+        "casa del gobernador corrientes",
+        "palacio de gobierno corrientes",
+        "sede del poder ejecutivo corrientes",
+        "25 de mayo 925 corrientes"
+      ],
+      "latitud": -27.4637,
+      "longitud": -58.83858,
+      "etiqueta": "Casa de Gobierno de la Provincia de Corrientes, 25 de Mayo 925 y Salta, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "municipalidad corrientes",
+        "municipalidad",
+        "muni corrientes",
+        "municipio corrientes",
+        "comuna corrientes",
+        "palacio municipal corrientes",
+        "municipalidad de corrientes capital"
+      ],
+      "latitud": -27.4645,
+      "longitud": -58.8359,
+      "etiqueta": "Municipalidad de la Ciudad de Corrientes, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.98
+    },
+    {
+      "alias": [
+        "plaza sargento cabral",
+        "plaza cabral",
+        "plaza juan bautista cabral",
+        "plaza cabral corrientes",
+        "cabral corrientes",
+        "plaza del centro corrientes",
+        "feria de artesanos plaza cabral",
+        "junin entre san lorenzo y santa fe",
+        "plaza cabral junin",
+        "peatonal junin frente a plaza cabral"
+      ],
+      "latitud": -27.46863,
+      "longitud": -58.83119,
+      "etiqueta": "Plaza Sargento Juan Bautista Cabral y entorno de la Peatonal Junín, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.97
+    },
+    {
+      "alias": [
+        "campus deodoro roca",
+        "campus deodoro",
+        "unne deodoro roca",
+        "campus unne corrientes",
+        "universidad nacional del nordeste corrientes",
+        "unne corrientes",
+        "campus facena",
+        "facultad de ciencias exactas"
+      ],
+      "latitud": -27.47084,
+      "longitud": -58.7825,
+      "etiqueta": "Campus Deodoro Roca de la Universidad Nacional del Nordeste, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "hospital escuela",
+        "hospital escuela corrientes",
+        "hospital jose francisco de san martin",
+        "hospital san martin corrientes",
+        "hospital escuela san martin",
+        "hospital de la avenida 3 de abril",
+        "hospital 3 de abril",
+        "hospital escuela unne"
+      ],
+      "latitud": -27.47505,
+      "longitud": -58.83586,
+      "etiqueta": "Hospital Escuela José Francisco de San Martín, entorno de Av. 3 de Abril y Rivadavia, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "hospital vidal",
+        "vidal",
+        "hospital jose ramon vidal",
+        "hospital dr jose ramon vidal",
+        "hospital regional vidal",
+        "hospital jose r vidal",
+        "hospital vidal corrientes"
+      ],
+      "latitud": -27.47948,
+      "longitud": -58.839,
+      "etiqueta": "Hospital José Ramón Vidal, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "instituto de cardiologia",
+        "cardiologia corrientes",
+        "instituto cardiologico",
+        "instituto de cardiologia de corrientes",
+        "instituto juana francisca cabral",
+        "cardiologico corrientes",
+        "icc"
+      ],
+      "latitud": -27.47155,
+      "longitud": -58.83435,
+      "etiqueta": "Instituto de Cardiología de Corrientes Juana Francisca Cabral, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "terminal corrientes",
+        "terminal de omnibus",
+        "terminal de colectivos",
+        "terminal de micros",
+        "terminal de pasajeros",
+        "terminal corrientes capital",
+        "terminal omnibus corrientes",
+        "terminal de omnibus corrientes capital",
+        "av maipu 2700",
+        "maipu 2700 corrientes"
+      ],
+      "latitud": -27.4981,
+      "longitud": -58.81438,
+      "etiqueta": "Terminal de Ómnibus de Corrientes Capital, Av. Maipú 2700, Corrientes, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "aeropuerto corrientes",
+        "aeropuerto internacional corrientes",
+        "aeropuerto piragine niveyro",
+        "piragine niveyro",
+        "aeropuerto camba punta",
+        "camba punta",
+        "aeropuerto cnq",
+        "aeropuerto doctor fernando piragine niveyro",
+        "sarc",
+        "rn 12 aeropuerto corrientes"
+      ],
+      "latitud": -27.4431,
+      "longitud": -58.76045,
+      "etiqueta": "Aeropuerto Internacional Doctor Fernando Piragine Niveyro (Cambá Punta), RN 12, código IATA CNQ, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "teatro vera",
+        "teatro juan de vera",
+        "teatro oficial juan de vera",
+        "juan de vera",
+        "teatro oficial corrientes",
+        "san juan 637",
+        "teatro san juan 637"
+      ],
+      "latitud": -27.46473,
+      "longitud": -58.8361,
+      "etiqueta": "Teatro Oficial Juan de Vera, San Juan 637, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "parque camba cua",
+        "camba cua",
+        "camba cua corrientes",
+        "parque camba cua corrientes",
+        "parque camba",
+        "barrio camba cua"
+      ],
+      "latitud": -27.46524,
+      "longitud": -58.84471,
+      "etiqueta": "Parque Cambá Cuá, barrio Cambá Cuá, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "parque mitre",
+        "mitre",
+        "parque mitre corrientes",
+        "paseo mitre",
+        "parque bartolome mitre"
+      ],
+      "latitud": -27.45959,
+      "longitud": -58.8292,
+      "etiqueta": "Parque Mitre, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "centenario shopping",
+        "shopping centenario",
+        "centenario mall",
+        "shopping corrientes",
+        "mall corrientes",
+        "centenario shopping mall",
+        "av raul alfonsin 3525",
+        "raul alfonsin 3525"
+      ],
+      "latitud": -27.47148,
+      "longitud": -58.80724,
+      "etiqueta": "Centenario Shopping Mall, Av. Raúl Alfonsín 3525, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "anfiteatro cocomarola",
+        "cocomarola",
+        "anfiteatro mario del transito cocomarola",
+        "anfiteatro de la fiesta del chamame",
+        "fiesta nacional del chamame",
+        "anfiteatro chamame",
+        "cocomarola corrientes"
+      ],
+      "latitud": -27.49059,
+      "longitud": -58.83023,
+      "etiqueta": "Anfiteatro Mario del Tránsito Cocomarola, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "facultad de medicina",
+        "facultad medicina unne",
+        "medicina unne",
+        "unne medicina",
+        "facultad de medicina corrientes",
+        "sargento cabral 2001",
+        "cabral 2001 corrientes"
+      ],
+      "latitud": -27.45919,
+      "longitud": -58.82463,
+      "etiqueta": "Facultad de Medicina de la Universidad Nacional del Nordeste, Sargento Juan Bautista Cabral 2001, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.99
+    },
+    {
+      "alias": [
+        "facultad de medicina unne moreno",
+        "facultad medicina moreno 1240",
+        "unne moreno 1240",
+        "edificio facultad de medicina",
+        "facultad medicina edificio central"
+      ],
+      "latitud": -27.47391,
+      "longitud": -58.83573,
+      "etiqueta": "Edificio de la Facultad de Medicina de la UNNE, Moreno 1240, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.98
+    },
+    {
+      "alias": [
+        "instituto de ciencias criminalisticas",
+        "instituto de criminalistica",
+        "criminalistica unne",
+        "iccyc",
+        "instituto de ciencias criminalisticas y criminologia",
+        "unne criminalistica"
+      ],
+      "latitud": -27.46184,
+      "longitud": -58.83235,
+      "etiqueta": "Instituto de Ciencias Criminalísticas y Criminología de la UNNE, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.98
+    },
+    {
+      "alias": [
+        "plaza juan de vera",
+        "plaza vera",
+        "plaza de vera",
+        "plaza juan torres de vera",
+        "plaza siete corrientes",
+        "plaza vera corrientes"
+      ],
+      "latitud": -27.467,
+      "longitud": -58.834,
+      "etiqueta": "Plaza Juan de Vera, microcentro de Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.88
+    },
+    {
+      "alias": [
+        "plaza de la cruz",
+        "plaza cruz de los milagros",
+        "plaza la cruz",
+        "plaza de la cruz corrientes"
+      ],
+      "latitud": -27.474,
+      "longitud": -58.829,
+      "etiqueta": "Plaza de la Cruz, barrio La Cruz, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.85
+    },
+    {
+      "alias": [
+        "plaza torrent",
+        "plaza eloisa torrent",
+        "plaza torrent corrientes",
+        "belgrano 1400 corrientes"
+      ],
+      "latitud": -27.47,
+      "longitud": -58.8305,
+      "etiqueta": "Plaza Torrent, Belgrano al 1400, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.83
+    },
+    {
+      "alias": [
+        "costanera corrientes",
+        "costanera general san martin",
+        "costanera san martin",
+        "paseo costanera corrientes",
+        "costanera norte corrientes"
+      ],
+      "latitud": -27.457,
+      "longitud": -58.8355,
+      "etiqueta": "Costanera General San Martín, sector céntrico ribereño, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.8
+    },
+    {
+      "alias": [
+        "paseo arazaty",
+        "playa arazaty",
+        "balneario arazaty",
+        "costanera sur corrientes",
+        "parque arazaty"
+      ],
+      "latitud": -27.477,
+      "longitud": -58.841,
+      "etiqueta": "Paseo y Playa Arazaty, Costanera Sur, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.81
+    },
+    {
+      "alias": [
+        "museo de bellas artes juan ramon vidal",
+        "museo juan ramon vidal",
+        "museo de bellas artes corrientes",
+        "museo vidal corrientes",
+        "san juan 634"
+      ],
+      "latitud": -27.466,
+      "longitud": -58.834,
+      "etiqueta": "Museo Provincial de Bellas Artes Dr. Juan Ramón Vidal, San Juan 634, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.93
+    },
+    {
+      "alias": [
+        "casa martinez",
+        "ex casa martinez",
+        "museo casa martinez",
+        "museo arqueologico y antropologico",
+        "quintana 971",
+        "fray jose de la quintana 971"
+      ],
+      "latitud": -27.464,
+      "longitud": -58.838,
+      "etiqueta": "Museo Arqueológico y Antropológico (Ex Casa Martínez), Fray José de la Quintana 971, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.93
+    },
+    {
+      "alias": [
+        "museo de artesanias",
+        "museo de artesanias tradicionales",
+        "museo de artesanias folcloricas",
+        "salta y quintana",
+        "museo artesanias corrientes"
+      ],
+      "latitud": -27.4638,
+      "longitud": -58.838,
+      "etiqueta": "Museo de Artesanías Tradicionales y Folclóricas, esquina Salta y Quintana, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.9
+    },
+    {
+      "alias": [
+        "casa molinas",
+        "museo casa molinas",
+        "museo de sitio casa molinas",
+        "carlos pellegrini 937",
+        "pellegrini 937"
+      ],
+      "latitud": -27.466,
+      "longitud": -58.837,
+      "etiqueta": "Museo de Sitio y Archivo Digital Casa Molinas, Carlos Pellegrini 937, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.91
+    },
+    {
+      "alias": [
+        "museo historico de corrientes",
+        "museo historico provincial",
+        "museo manuel cabral de melo",
+        "9 de julio 1044",
+        "nueve de julio 1044"
+      ],
+      "latitud": -27.464,
+      "longitud": -58.837,
+      "etiqueta": "Museo Histórico Provincial Tte. de Gobernador Manuel Cabral de Melo y Alpoín, 9 de Julio 1044, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.91
+    },
+    {
+      "alias": [
+        "macc",
+        "museo de arte contemporaneo corrientes",
+        "museo arte contemporaneo",
+        "museo de arte contemporaneo macc",
+        "9 de julio 1098"
+      ],
+      "latitud": -27.4635,
+      "longitud": -58.837,
+      "etiqueta": "Museo de Arte Contemporáneo de Corrientes (MACC), 9 de Julio 1098, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.9
+    },
+    {
+      "alias": [
+        "rectorado unne",
+        "unne rectorado",
+        "universidad nacional del nordeste rectorado",
+        "rectorado universidad del nordeste",
+        "25 de mayo 868"
+      ],
+      "latitud": -27.463,
+      "longitud": -58.839,
+      "etiqueta": "Rectorado de la Universidad Nacional del Nordeste (UNNE), 25 de Mayo 868, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.9
+    },
+    {
+      "alias": [
+        "facultad de derecho unne corrientes",
+        "derecho unne",
+        "facultad derecho corrientes",
+        "salta 459",
+        "derecho ciencias sociales y politicas"
+      ],
+      "latitud": -27.463,
+      "longitud": -58.836,
+      "etiqueta": "Facultad de Derecho y Ciencias Sociales y Políticas de la UNNE, Salta 459, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.92
+    },
+    {
+      "alias": [
+        "campus sargento cabral",
+        "campus unne sargento cabral",
+        "unne sargento cabral",
+        "campus cabral corrientes",
+        "campus sargento cabral corrientes",
+        "predio universitario sargento cabral"
+      ],
+      "latitud": -27.475,
+      "longitud": -58.8295,
+      "etiqueta": "Campus Universitario Sargento Cabral de la UNNE, Sargento Cabral 2001, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.88
+    },
+    {
+      "alias": [
+        "facultad de ciencias agrarias unne",
+        "ciencias agrarias corrientes",
+        "facultad agrarias",
+        "sargento cabral 2131"
+      ],
+      "latitud": -27.476,
+      "longitud": -58.829,
+      "etiqueta": "Facultad de Ciencias Agrarias de la UNNE, Sargento Cabral 2131, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.91
+    },
+    {
+      "alias": [
+        "facultad de ciencias veterinarias unne",
+        "veterinaria unne corrientes",
+        "facultad veterinaria corrientes",
+        "sargento cabral 2139"
+      ],
+      "latitud": -27.4765,
+      "longitud": -58.829,
+      "etiqueta": "Facultad de Ciencias Veterinarias de la UNNE, Sargento Cabral 2139, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.91
+    },
+    {
+      "alias": [
+        "facultad de odontologia unne",
+        "odontologia unne corrientes",
+        "facultad odontologia corrientes",
+        "av libertad 5450",
+        "libertad 5450"
+      ],
+      "latitud": -27.4515,
+      "longitud": -58.795,
+      "etiqueta": "Facultad de Odontología de la UNNE, Av. Libertad 5450, Campus Deodoro Roca, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.87
+    },
+    {
+      "alias": [
+        "facultad exactas unne",
+        "facultad de ciencias exactas y naturales corrientes",
+        "facena",
+        "av libertad 5460",
+        "libertad 5460"
+      ],
+      "latitud": -27.451,
+      "longitud": -58.795,
+      "etiqueta": "Facultad de Ciencias Exactas y Naturales y Agrimensura de la UNNE, Av. Libertad 5460, Campus Deodoro Roca, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.87
+    },
+    {
+      "alias": [
+        "hospital llano",
+        "hospital angela iglesia de llano",
+        "hospital de llano",
+        "ayacucho 3288",
+        "hospital llano corrientes"
+      ],
+      "latitud": -27.481,
+      "longitud": -58.812,
+      "etiqueta": "Hospital Ángela Iglesia de Llano, Ayacucho 3288, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.91
+    },
+    {
+      "alias": [
+        "sanatorio del norte",
+        "sanatorio norte corrientes",
+        "sanatorio del norte corrientes",
+        "pellegrini 1354",
+        "carlos pellegrini 1354"
+      ],
+      "latitud": -27.466,
+      "longitud": -58.833,
+      "etiqueta": "Sanatorio del Norte, Carlos Pellegrini 1354/1358, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.9
+    },
+    {
+      "alias": [
+        "sanatorio san juan",
+        "sanatorio san juan corrientes",
+        "san juan de acuerdos",
+        "san juan 975"
+      ],
+      "latitud": -27.4645,
+      "longitud": -58.835,
+      "etiqueta": "Sanatorio San Juan de Acuerdos, San Juan 975, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.89
+    },
+    {
+      "alias": [
+        "hospital san francisco de asis",
+        "hospital de salud mental san francisco",
+        "san francisco de asis corrientes",
+        "velez sarsfield 99"
+      ],
+      "latitud": -27.468,
+      "longitud": -58.834,
+      "etiqueta": "Hospital de Salud Mental San Francisco de Asís, Vélez Sarsfield 99, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.89
+    },
+    {
+      "alias": [
+        "cardiocentro corrientes",
+        "cardiocentro",
+        "rivadavia 1741 corrientes",
+        "centro cardiologico corrientes"
+      ],
+      "latitud": -27.469,
+      "longitud": -58.8305,
+      "etiqueta": "Cardiocentro, Rivadavia 1741, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.88
+    },
+    {
+      "alias": [
+        "clinica del pilar",
+        "clinica pilar corrientes",
+        "san martin 555 corrientes",
+        "clinica del pilar corrientes"
+      ],
+      "latitud": -27.466,
+      "longitud": -58.838,
+      "etiqueta": "Clínica del Pilar, San Martín 555, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.88
+    },
+    {
+      "alias": [
+        "clinica del sol corrientes",
+        "clinica del sol",
+        "medrano 1612",
+        "medrano 1600 clinica"
+      ],
+      "latitud": -27.481,
+      "longitud": -58.818,
+      "etiqueta": "Clínica del Sol, Medrano 1612, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.86
+    },
+    {
+      "alias": [
+        "terminal minibuses corrientes",
+        "terminal de minibuses",
+        "minibuses corrientes",
+        "belgrano 2157",
+        "terminal mini bus corrientes"
+      ],
+      "latitud": -27.471,
+      "longitud": -58.818,
+      "etiqueta": "Terminal de Minibuses de Corrientes, Belgrano 2157, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.88
+    },
+    {
+      "alias": [
+        "club de regatas corrientes",
+        "regatas corrientes",
+        "regatas",
+        "club regatas",
+        "costanera regatas corrientes"
+      ],
+      "latitud": -27.459,
+      "longitud": -58.835,
+      "etiqueta": "Club de Regatas Corrientes, Costanera General San Martín, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.84
+    },
+    {
+      "alias": [
+        "club atletico huracan corrientes",
+        "huracan corrientes",
+        "huracan de corrientes",
+        "estadio huracan corrientes"
+      ],
+      "latitud": -27.481,
+      "longitud": -58.822,
+      "etiqueta": "Club Atlético Huracán Corrientes, predio deportivo urbano, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.72
+    },
+    {
+      "alias": [
+        "peatonal junin",
+        "junin peatonal",
+        "peatonal de corrientes",
+        "calle junin centro",
+        "junin al 900 corrientes"
+      ],
+      "latitud": -27.467,
+      "longitud": -58.832,
+      "etiqueta": "Peatonal Junín, tramo comercial céntrico, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.84
+    },
+    {
+      "alias": [
+        "avenida 3 de abril 700",
+        "av 3 de abril al 700",
+        "tres de abril 700",
+        "avenida tres de abril corrientes"
+      ],
+      "latitud": -27.472,
+      "longitud": -58.837,
+      "etiqueta": "Av. 3 de Abril al 700, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.75
+    },
+    {
+      "alias": [
+        "avenida ferre 2700",
+        "av ferre 2700",
+        "ferre al 2700",
+        "avenida presidente ferre 2700"
+      ],
+      "latitud": -27.477,
+      "longitud": -58.819,
+      "etiqueta": "Av. Presidente Ferré al 2700, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.75
+    },
+    {
+      "alias": [
+        "avenida libertad 5400",
+        "av libertad 5400 corrientes",
+        "libertad al 5400",
+        "av libertad campus unne"
+      ],
+      "latitud": -27.4515,
+      "longitud": -58.796,
+      "etiqueta": "Av. Libertad al 5400, entorno del Campus Deodoro Roca, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.78
+    },
+    {
+      "alias": [
+        "avenida armenia 3000",
+        "av armenia al 3000",
+        "armenia 3000 corrientes",
+        "avenida armenia corrientes"
+      ],
+      "latitud": -27.463,
+      "longitud": -58.81,
+      "etiqueta": "Av. Armenia al 3000, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.72
+    },
+    {
+      "alias": [
+        "avenida pujol 1200",
+        "av pujol 1200",
+        "juan pujol al 1200",
+        "avenida juan pujol corrientes"
+      ],
+      "latitud": -27.454,
+      "longitud": -58.831,
+      "etiqueta": "Av. Juan Pujol al 1200, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.74
+    },
+    {
+      "alias": [
+        "avenida costanera san martin 100",
+        "av costanera 100",
+        "san martin costanera 100",
+        "museo de ciencias naturales amando bonpland"
+      ],
+      "latitud": -27.457,
+      "longitud": -58.835,
+      "etiqueta": "Museo de Ciencias Naturales Dr. Amado Bonpland, Av. Costanera San Martín 100, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.88
+    },
+    {
+      "alias": [
+        "tribunales corrientes",
+        "poder judicial corrientes",
+        "palacio de justicia corrientes",
+        "tribunal superior de justicia corrientes",
+        "9 de julio 1099 corrientes"
+      ],
+      "latitud": -27.4635,
+      "longitud": -58.837,
+      "etiqueta": "Edificio judicial del centro de Corrientes, entorno de 9 de Julio 1099, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.72
+    },
+    {
+      "alias": [
+        "catedral corrientes",
+        "iglesia catedral corrientes",
+        "catedral nuestra senora del rosario",
+        "catedral de corrientes",
+        "san juan y 25 de mayo corrientes"
+      ],
+      "latitud": -27.463,
+      "longitud": -58.839,
+      "etiqueta": "Iglesia Catedral Nuestra Señora del Rosario, centro histórico de Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.83
+    },
+    {
+      "alias": [
+        "iglesia cruz de los milagros",
+        "santisima cruz de los milagros",
+        "parroquia la cruz corrientes",
+        "templo de la cruz corrientes"
+      ],
+      "latitud": -27.474,
+      "longitud": -58.829,
+      "etiqueta": "Parroquia Santísima Cruz de los Milagros, barrio La Cruz, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.84
+    },
+    {
+      "alias": [
+        "iglesia nuestra senora de la merced",
+        "nuestra senora de la merced",
+        "parroquia la merced corrientes",
+        "iglesia la merced corrientes",
+        "25 de mayo 802",
+        "25 de mayo al 800"
+      ],
+      "latitud": -27.4635,
+      "longitud": -58.839,
+      "etiqueta": "Iglesia Nuestra Señora de la Merced, 25 de Mayo 802, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.92
+    },
+    {
+      "alias": [
+        "iglesia san francisco solano",
+        "parroquia san francisco solano",
+        "san francisco solano corrientes",
+        "mendoza 468",
+        "mendoza al 400 corrientes"
+      ],
+      "latitud": -27.4655,
+      "longitud": -58.837,
+      "etiqueta": "Parroquia San Francisco Solano, Mendoza 468, Corrientes Capital, Corrientes",
+      "provincia": "corrientes",
+      "pais": "ar",
+      "confianza": 0.91
+    }
+  ]
+}
