@@ -58,13 +58,15 @@ info:
       desde que M4 acepta la actualización. Las ubicaciones vencidas se excluyen
       de las búsquedas.
 
-    - Idempotencia y concurrencia: reservar un conductor es atómico. La misma
-      solicitud_id repetida sobre el mismo conductor no crea una segunda
-      reserva; otra solicitud recibe 409. M5 libera explícitamente su reserva.
-      Si M5 no la libera, la reserva vence a los 10 minutos de su creación.
-      M4 conserva la clave de idempotencia y el resultado asociado durante 3
-      horas desde el primer procesamiento; repetir la clave dentro de esa
-      ventana no renueva ni extiende la reserva.
+    - Idempotencia y concurrencia: la reserva se crea atómicamente. M5 usa una
+      Idempotency-Key distinta para reservar y para informar el resultado de la
+      oferta. Repetir la misma clave con el mismo body devuelve el resultado
+      original sin repetir la operación; reutilizarla con otro body produce
+      422. Una reserva solo puede finalizarse una vez: repetir el mismo estado
+      final no produce cambios y enviar el estado final opuesto produce 409.
+      Si M5 no finaliza la reserva, esta vence a los 10 minutos de su creación.
+      La Idempotency-Key y su resultado se conservan durante 3 horas; un
+      reintento no renueva ni extiende la reserva.
 
     - Eventos M3: el acuerdo requiere connected y available como
       booleanos y eventos puntuales, no una lista completa. event_id y
@@ -409,18 +411,24 @@ paths:
     post:
       tags: [Disponibilidad]
       operationId: cambiarReservaTemporalConductor
-      summary: Reservar temporalmente o liberar un conductor para una solicitud
+      summary: Reservar temporalmente o informar el resultado de la oferta
       description: >-
         Consumidor: M5, mediante identidad de servicio autorizada por M1. M5
-        llama con estado_temporal=RESERVADO antes/de forma coordinada con
-        una oferta. M4 debe comprobar y cambiar la reserva atómicamente para
-        evitar que dos solicitudes obtengan el mismo conductor. La misma
-        solicitud_id repetida para el mismo conductor es idempotente. Si otra
-        solicitud ya lo reservó, responde 409. Para liberar, M5 envía
-        estado_temporal=LIBERADO y la solicitud_id que originó el bloqueo; solo
-        esa solicitud puede liberar su propia reserva. La reserva vence 10
-        minutos después de su creación si M5 no la libera antes. M5 debe
-        liberarla explícitamente al cerrar la oferta y no depender solo del
+        envía estado_temporal=RESERVADO antes o durante el envío de una oferta.
+        M4 debe comprobar y crear la reserva atómicamente para evitar que dos
+        solicitudes obtengan el mismo conductor. Si el conductor ya está
+        reservado por otra solicitud, M4 responde 409. Para finalizar la reserva,
+        M5 envía OFERTA_ACEPTADA u OFERTA_RECHAZADA junto con la solicitud_id que
+        originó el bloqueo; solo esa solicitud puede finalizar su propia reserva.
+        Con OFERTA_ACEPTADA, M4 notifica a M3 que el conductor debe pasar a No
+        Disponible. Con OFERTA_RECHAZADA, M4 no notifica a M3 una aceptación ni
+        modifica el estado operativo que M3 administra. La misma solicitud no
+        puede finalizarse con resultados opuestos el primer estado final válido
+        prevalece y un intento posterior con el resultado opuesto responde 409.
+        Para la misma solicitud_id y conductor_id, repetir el mismo estado
+        final no produce cambios. La reserva vence 10
+        minutos después de su creación si M5 no la finaliza antes. M5 debe
+        informar el resultado de la oferta explícitamente y no depender solo del
         vencimiento. Un reintento idempotente no reinicia ni extiende esos 10
         minutos. Se usa POST para preservar la ruta acordada por los grupos.
       x-trazabilidad: [RF-4.4, RF-5.4, RF-5.6, RNF-08, RNF-09, RNF-11]
@@ -438,13 +446,19 @@ paths:
                 value:
                   estado_temporal: RESERVADO
                   solicitud_id: 018f1f20-a128-739e-8af1-4caa35108a91
-              liberar:
+              ofertaAceptada:
                 value:
-                  estado_temporal: LIBERADO
+                  estado_temporal: OFERTA_ACEPTADA
+                  solicitud_id: 018f1f20-a128-739e-8af1-4caa35108a91
+              ofertaRechazada:
+                value:
+                  estado_temporal: OFERTA_RECHAZADA
                   solicitud_id: 018f1f20-a128-739e-8af1-4caa35108a91
       responses:
         '200':
-          description: Operación repetida sin cambios (idempotencia) o liberación aplicada.
+          description: >-
+            Reserva finalizada o solicitud repetida con el mismo resultado final;
+            un reintento idempotente no vuelve a aplicar efectos.
           headers:
             X-Request-Id:
               $ref: '#/components/headers/XRequestId'
@@ -468,7 +482,7 @@ paths:
         '403':
           $ref: '#/components/responses/SinPermiso'
         '404':
-          description: Conductor inexistente o reserva a liberar no encontrada.
+          description: Conductor inexistente o reserva activa no encontrada para finalizar.
           headers:
             X-Request-Id:
               $ref: '#/components/headers/XRequestId'
@@ -479,7 +493,8 @@ paths:
         '409':
           description: >-
             El conductor ya está reservado por otra solicitud, no es elegible,
-            o la solicitud_id no coincide con la reserva que se intenta liberar.
+            la solicitud_id no coincide con la reserva activa o se intenta
+            finalizar la misma reserva con un resultado opuesto al ya registrado.
           headers:
             X-Request-Id:
               $ref: '#/components/headers/XRequestId'
@@ -719,14 +734,14 @@ components:
       in: header
       required: true
       description: >-
-        Clave única generada y conservada por el consumidor para hacer segura
-        la repetición de la misma operación POST. Misma clave y mismo cuerpo:
-        M4 devuelve el resultado original. Misma clave con cuerpo distinto:
-        422. Use una clave distinta para reservar y para liberar. M4 conserva
-        la clave y el resultado asociado durante 3 horas desde el primer
-        procesamiento. Repetir la clave dentro de esa ventana no renueva la
-        reserva; una vez vencida la ventana, M4 ya no garantiza reconocer la
-        repetición como la misma operación.
+        Clave única generada y conservada por el consumidor para repetir una
+        operación POST de forma segura. Misma clave y mismo body M4 devuelve
+        el resultado original sin repetir la operación. Misma clave con body
+        distinto: 422. Use una clave distinta para reservar y para informar el
+        resultado de la oferta. M4 conserva la clave y el resultado asociado
+        durante 3 horas desde el primer procesamiento. Repetir la clave dentro
+        de esa ventana no renueva la reserva; una vez vencida, M4 ya no garantiza
+        reconocer la repetición como la misma operación.
       schema:
         type: string
         minLength: 1
@@ -735,7 +750,7 @@ components:
       name: conductor_id
       in: path
       required: true
-      description: Identificador canónico del conductor. Propuesta pendiente de confirmar: UUID.
+      description: Identificador canónico del conductor. Propuesta pendiente de confirmar UUID.
       schema:
         $ref: '#/components/schemas/Identificador'
   headers:
@@ -768,8 +783,10 @@ components:
       description: Tipo de servicio de vehículo acordado por M3/M4/M5/M7/M9.
     EstadoTemporal:
       type: string
-      enum: [RESERVADO, LIBERADO]
-      description: Bloqueo temporal por participación en una oferta/solicitud.
+      enum: [RESERVADO, OFERTA_ACEPTADA, OFERTA_RECHAZADA]
+      description: >-
+        RESERVADO crea el bloqueo temporal. OFERTA_ACEPTADA y OFERTA_RECHAZADA
+        son resultados finales que cierran la reserva de esa solicitud.
     ActualizarUbicacion:
       type: object
       additionalProperties: false
@@ -1012,7 +1029,7 @@ components:
         type:
           type: string
           format: uri-reference
-          description: URI que identifica el tipo de problema; usar about:blank si no hay tipo específico.
+          description: URI que identifica el tipo de problema usar about blank si no hay tipo específico.
         title:
           type: string
           description: Resumen estable y legible del tipo de problema.
