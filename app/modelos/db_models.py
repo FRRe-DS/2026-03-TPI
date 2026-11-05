@@ -9,7 +9,7 @@ import uuid
 from sqlalchemy import Column, Integer, Float, String, DateTime #tipos de datos mas comunes
 from sqlalchemy.dialects.postgresql import UUID #restricciones de tipo mas complejos e incrementales
 from datetime import datetime, timezone#tipo de datos en formato de fecha y hora
-from .database import Base #importante para crear desde 0 la tabla
+from ..db.database_config import Base #importante para crear desde 0 la tabla
 
 '''
     class Prueba(Base): #todo lo que herede Base, sera una tabla en la base de datos.

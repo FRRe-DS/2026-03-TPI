@@ -51,11 +51,11 @@ async def simular_comunicacion_modulo_externo_prueba(entrada: dict) -> dict:
         "datos_enriquecidos": "Información adicional procesada por el socio externo"
     }
 
-    '''
+'''
     este dato de retorno, debe ser compatible con alguna definicion del schema, es decir que debe ser un diccionario con los 
     datos que se esperan en el schema de salida, para que la api pueda devolverlo al cliente
     aqui si hiciera falta el modulo simulado haria un procesamiento de datos con la variable parametrizada "entrada"
-    '''
+'''
 
 async def procesarEventoPrueba(datos_entrada: dict) -> dict:
     

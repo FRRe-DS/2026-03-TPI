@@ -18,6 +18,15 @@ services: # palabra reservada que indica que todo lo de abajo identado dentro de
       - "5432:5432"
     volumes: #conecta disco con contenedor, si necesito comunicarme buscara la analogia disco:conenedor, esta oculta y no la vemos
       - m4db:/var/lib/postgresql/data
+  m4cache:
+    image: redis:7-alpine # Imagen liviana basada en alpine, ideal para caché
+    container_name: m4cache # Nombre visual en la terminal al hacer 'docker ps'
+    ports:
+      - "6379:6379" # Puerto por defecto de Redis (IzquierdaPC:DerechaContenedor)
+    env_file:
+      - .env # Inyecta las variables REDIS_HOST y REDIS_PORT dentro del contenedor
+    # Comando para asegurar que Redis no consuma toda la RAM de la PC
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
 
   api: #es el nombre del servicio que se despliega, es mas facil que quede predeterminado
     build: . # le dice donde tiene que buscar el dockerfile, en este caso en el directorio actual
@@ -26,7 +35,8 @@ services: # palabra reservada que indica que todo lo de abajo identado dentro de
     ports: #puertos de acceso compatibles con la version de api, izquierda personalizable, derecha no
       - "8000:8000"
     depends_on: #orden de encendido/despleigue, si existiera varias db y tienen significados especificos, deben ser secuenciales
-      - m4db #debe ser igual al de la linea 6, es decir, el nombre del servicio de la db, no el nombre del contenedor
+      - m4db # debe ser igual al de la linea 6, es decir, el nombre del servicio de la db, no el nombre del contenedor
+      - m4cache # Debe encender también la cache antes de arrancar FastAPI
     volumes:
       - ./app:/tpim4/app #volumen que conecta el disco con el contenedor, es decir, si modificamos el codigo fuente en el disco, se vera reflejado en el contenedor
       - ./alembic:/tpim4/alembic            # Sincroniza la carpeta alembic para migraciones
@@ -37,6 +47,9 @@ services: # palabra reservada que indica que todo lo de abajo identado dentro de
     environment:
       # Esta es la ruta estándar que funcionará en la PC de todos
       - DATABASE_URL=postgresql+psycopg2://${DB_USER}:${DB_PASS}@m4db:5432/${DB_NAME}
+      # Pasamos explícitamente las variables de red interna para que Python sepa dónde buscar la Redis cache
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
 
 volumes: #declaracion de volumenes, es decir, donde se guardara la informacion de la base de datos, para que no se pierda al apagar el contenedor
   m4db: #nombre del volumen que se crea, es el que se ve en la terminal, es el que se ve en docker volume ls
