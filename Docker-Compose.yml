@@ -1,6 +1,46 @@
 version: '3.8' #version compilable de docker
 
 services: # palabra reservada que indica que todo lo de abajo identado dentro de service, es parte del contenedor
+  #los siguientes 2 servicios son para realizar keycloak en local para pruebas y comprobacion de respuestas de autenticacion
+  keycloak-db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_keycloak_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DB_KEYCLOAK}
+      POSTGRES_USER: ${DB_KEYCLOAKUSER}
+      POSTGRES_PASSWORD: ${DB_KEYCLOAKPASSWORD}
+    networks:
+      - global_network
+    restart: always
+  
+  keycloak-server:
+    image: quay.io/keycloak/keycloak:23.0.6
+    container_name: keycloak-server
+    command: start --import-realm
+    environment:
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT_BACKCHANNEL: false
+      KC_HTTP_ENABLED: true
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HEALTH_ENABLED: true
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db/${DB_KEYCLOAK}
+      KC_DB_USERNAME: ${DB_KEYCLOAKUSER}
+      KC_DB_PASSWORD: ${DB_KEYCLOAKPASSWORD}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/realm-config:/opt/keycloak/data/import
+    restart: always
+    depends_on:
+      - keycloak-db
+    networks:
+      - global_network
+
   #m4db es el nombre del dns que se observara dentro del contenedor, es decir, si dentro del contenedor api, 
   #se quiere hacer un ping a la base de datos, se debe hacer ping m4db
   m4db:
@@ -37,6 +77,7 @@ services: # palabra reservada que indica que todo lo de abajo identado dentro de
     depends_on: #orden de encendido/despleigue, si existiera varias db y tienen significados especificos, deben ser secuenciales
       - m4db # debe ser igual al de la linea 6, es decir, el nombre del servicio de la db, no el nombre del contenedor
       - m4cache # Debe encender también la cache antes de arrancar FastAPI
+      - keycloak-server
     volumes:
       - ./app:/tpim4/app #volumen que conecta el disco con el contenedor, es decir, si modificamos el codigo fuente en el disco, se vera reflejado en el contenedor
       - ./alembic:/tpim4/alembic            # Sincroniza la carpeta alembic para migraciones
@@ -50,6 +91,13 @@ services: # palabra reservada que indica que todo lo de abajo identado dentro de
       # Pasamos explícitamente las variables de red interna para que Python sepa dónde buscar la Redis cache
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
+    networks:
+      - global_network
 
 volumes: #declaracion de volumenes, es decir, donde se guardara la informacion de la base de datos, para que no se pierda al apagar el contenedor
   m4db: #nombre del volumen que se crea, es el que se ve en la terminal, es el que se ve en docker volume ls
+  postgres_keycloak_data:
+
+networks:
+  global_network:
+    driver: bridge
