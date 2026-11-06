@@ -83,8 +83,6 @@ info:
       RNF-13. No reintentan indefinidamente.
   contact:
     name: Módulo 4
-  license:
-    name: Uso académico - Desarrollo de Software 2026
 servers:
   - url: /
     description: URL relativa al host y puerto configurados para la implementación activa.
