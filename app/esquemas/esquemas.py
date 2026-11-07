@@ -76,7 +76,7 @@ class ConsultaEstimacionRuta(BaseModel):
     origen_longitud: float = Field(...,ge=-180,le=180)
     destino_latitud: float = Field(...,ge=-90,le=90)
     destino_longitud: float = Field(...,ge=-180,le=180)
-    tipo_vehiculo: VehiculosSoportados = Field(...,description="solo n posibles datos en mayusculas definidas en la enumeracion")
+    tipo_vehiculo: VehiculosSoportados = Field(description="solo n posibles datos en mayusculas definidas en la enumeracion")
 
 class ResultadoEstimacionRuta(BaseModel):
     origen:Coordenada = Field(...,description="coordenadas lat y lon del origen")

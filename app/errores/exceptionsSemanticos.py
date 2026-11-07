@@ -97,3 +97,13 @@ class HashBodyDiferente(ProblemaDominio):
             detail = detail,
             code = "IDEMPOTENCIA_CONFLICTO"
         )
+
+class ErrorHealthCheck(ProblemaDominio):
+    def __init__(self, detail:str="Fallo en la verificacion de salud del servicio"):
+        super().__init__(
+            type = "/errores/healthcheck/",
+            title = "Fallo en Health Check",
+            status_code = 503,
+            detail = detail,
+            code = "HEALTH_CHECK_FALLO"
+        )

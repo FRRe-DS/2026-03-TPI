@@ -17,6 +17,8 @@ from app.servicios.cadenaDeProveedores import AdaptadorEncadenado
 from app.servicios.calculosDeEstimacion import CalculosDeViaje
 from app.servicios.manejarReserva import RegistrarReserva
 from app.seguridad.idempotenciaManager import verificar_idempotencia
+from .errores.exceptionsSemanticos import ErrorHealthCheck
+from .db.cache_config import cache
 Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya existia, no hace nada. 
 #Esto es para inicializar la base de datos y crear las tablas que se definan en models.py que hereden de Base.
 
@@ -67,7 +69,7 @@ ruta1 = APIRouter(prefix="/api/v1",tags=["Ubicaciones"])
 ruta2 = APIRouter(prefix="/api/v1",tags=["Geocodificacion"])
 ruta3 = APIRouter(prefix="/api/v1",tags=["Rutas"])
 ruta4 = APIRouter(prefix="/api/v1",tags=["Disponibilidad"])
-ruta5 = APIRouter(prefix="/health/",tags=["Salud"])
+ruta5 = APIRouter(prefix="/health",tags=["Salud"])
 adaptadorJerarquico = AdaptadorEncadenado()
 
 #en cada endpoint se colocaria dependencies=[Depends(verificar_rol("ubicacion-be"))], antes del reesponse_model
@@ -96,5 +98,40 @@ async def RealizarReserva(datos:SolicitudReserva,idempotency_key: str = Depends(
     resultado=RegistrarReserva()
     return resultado
 
+@ruta5.get("/live", status_code=200)
+def consultar_liveness():
+    """
+    LIVENESS:
+    Valida únicamente que el servidor de FastAPI esté respondiendo. 
+    No consulta bases de datos para evitar reinicios innecesarios en bucle por problemas de red pasajeros.
+    """
+    return {"status": "UP"}
 
+@ruta5.get("ready", status_code=200)
+def consultar_readiness():
+    """
+    READINESS:
+    Verifica la salud operativa de las dependencias críticas:
+    1. PostgreSQL (via SQLAlchemy engine)
+    2. Redis (via cliente de caché)
+    Si alguna falla, dispara una excepción semántica que el manejador global traduce a 503.
+    """
+    
+    # 1. Validación de PostgreSQL (m4db) usando el engine configurado en database_config
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except SQLAlchemyError as e:
+        raise ErrorHealthCheck(
+            detail="No se pudo establecer conexión con la base de datos relacional."
+        )
 
+    # 2. Validación de Redis (m4cache) usando tu objeto 'cache' de cache_config
+    try:
+        # El comando ping() verifica si el servidor Redis responde correctamente
+        cache.ping()
+    except Exception as e:
+        raise ErrorHealthCheck(
+            detail="El motor de caché Redis no responde a las solicitudes de ping.")
+
+    return {"status": "READY"}
