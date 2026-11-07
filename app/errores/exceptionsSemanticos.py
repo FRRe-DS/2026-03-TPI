@@ -2,7 +2,8 @@ from fastapi import Request
 from app.main import logger
 
 class ProblemaGenerico (Exception):
-    def __init__(self, type: str = "about:blank", title: str = "", status_code: int = None, detail: str = "", instance: str = "", code: str = None, trace_id: str = None, invalid_params = None):
+    def __init__(self, type: str = "about:blank", title: str = "", status_code: int = None, 
+                detail: str = "", instance: str = "", code: str = None, trace_id: str = None, invalid_params = None):
         if not (400 <= status_code <= 599):
             raise ValueError(
                 f"El código de estado HTTP '{status_code}' es inválido para un problema. "
@@ -38,12 +39,20 @@ class ProblemaDominio (Exception):
         super().__init__(detail)
 
 class NoAutenticado (ProblemaGenerico):
-    # 401
-    pass
+    def __init__(self, detail:str="Falla en autenticacion o certificados no validos"):
+            super().__init__(
+                title = "No Autenticado",
+                status_code = 401,
+                detail = detail,
+                code = "NO_AUTENTICADO")
 
 class SinPermiso (ProblemaGenerico):
-    # 403
-    pass
+    def __init__(self, detail:str="El usuario no posee los permisos necesarios para acceder a este recurso"):
+        super().__init__(
+            title = "Sin Permiso",
+            status_code = 403,
+            detail = detail,
+            code = "SIN_PERMISO")
 
 class NoProcesable (ProblemaDominio):
     # 422
