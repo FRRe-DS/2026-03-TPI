@@ -39,9 +39,9 @@ class ConductorCache(HashModel):
         database = redis_cache  # Vinculamos este modelo a tu conexión centralizada
 
 class UbicacionesCond(HashModel):#usa ttl
-    conductor_id: UUID = Field(...,index=True,description="id del conductor que reporta la ubicacion")
-    geo:Coordenada = Field()
-    timestamp_ubicacion: datetime =Field(...,description="")
+    conductor_id: UUID = Field(...,primary_key=True,description="id del conductor que reporta la ubicacion")
+    geo:Coordenada = Field(...)
+    timestamp_ubicacion: datetime =Field(...)
     class Meta:
         database = cache
 

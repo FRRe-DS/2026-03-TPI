@@ -31,6 +31,18 @@ class VehiculosSoportados(str,Enum):
     AUTO="AUTO"
     MOTO="MOTO"
 
+class ActualizarUbicacion(BaseModel): 
+    latitud: float = Field(..., ge=-90.0, le=90.0, description="Latitud en grados decimales")
+    longitud: float = Field(..., ge=-180.0, le=180.0, description="Longitud en grados decimales")
+    timestamp_ubicacion: datetime = Field(..., description="Timestamp de la ubicación en formato ISO 8601")
+
+class UbicacionRegistrada(BaseModel):
+    conductor_id: UUID = Field(..., description="Identificador único del conductor") 
+    timestamp_ubicacion: datetime = Field(..., description="Timestamp de la ubicación en formato ISO 8601")
+    recibida_en: datetime = Field(..., description="Timestamp de recepción en formato ISO 8601")
+    vigente: bool = Field(..., description="Indica si la ubicación es la más reciente y válida")
+    expira_en: datetime = Field(..., description="Timestamp de expiración en formato ISO 8601")
+    
 class ConsultaGeocodificacion(BaseModel):
     direccion: str = Field(..., min_length=1, description="Calle y altura")
     provincia: str = Field(description="Provincia o región")
