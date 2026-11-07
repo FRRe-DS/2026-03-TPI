@@ -97,3 +97,11 @@ class HashBodyDiferente(ProblemaDominio):
             detail = detail,
             code = "IDEMPOTENCIA_CONFLICTO"
         )
+
+class ErrorTimeStamp(ProblemaGenerico):
+    def __init__(self, detail:str="Timestamp anterior a la ubicación vigente, o mismo timestamp con coordenadas distintas."):
+        super().__init__(
+            title = "Conflicto",
+            status_code = 409,
+            detail = detail,
+            code = "CONFLICTO_TIMESTAMP")

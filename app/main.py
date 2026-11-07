@@ -17,6 +17,7 @@ from app.servicios.cadenaDeProveedores import AdaptadorEncadenado
 from app.servicios.calculosDeEstimacion import CalculosDeViaje
 from app.servicios.manejarReserva import RegistrarReserva
 from app.seguridad.idempotenciaManager import verificar_idempotencia
+
 Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya existia, no hace nada. 
 #Esto es para inicializar la base de datos y crear las tablas que se definan en models.py que hereden de Base.
 
@@ -72,6 +73,21 @@ adaptadorJerarquico = AdaptadorEncadenado()
 
 #en cada endpoint se colocaria dependencies=[Depends(verificar_rol("ubicacion-be"))], antes del reesponse_model
 #para que se ejecute la verificacion de rol y si no cumple con el rol requerido, se lanza un error 403
+
+@ruta1.put("/conductores/{conductor_id}/ubicacion",response_model=UbicacionRegistrada)
+def endpoint_actualizar_ubicacion(
+    conductor_id: UUID,                     # <--- Viene mágicamente de la URL y se valida como UUID
+    datos: ActualizarUbicacion,             # <--- Viene del Body de la petición validado por Pydantic
+    response: Response                      # <--- Objeto inyectado para manejar el código HTTP dinámico si hace falta
+):
+    # Delegamos la lógica al servicio
+    resultado, es_nuevo = ActualizarUbicacionService.procesar(conductor_id, datos)
+    # Definimos el código de éxito según corresponda al contrato
+    if es_nuevo:
+        response.status_code = status.HTTP_201_CREATED
+    else:
+        response.status_code = status.HTTP_200_OK
+    return resultado
 
 @ruta2.post("/geocodificaciones",response_model=ResultadoGeocodificacion,status_code=200,
             description="Consulta realizada; coincidencias puede ser una lista vacía.")
