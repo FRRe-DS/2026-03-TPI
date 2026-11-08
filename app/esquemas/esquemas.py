@@ -7,7 +7,7 @@ para luego realizar contratos en rest o openAPI tengo entendido.
 
 '''
 from pydantic import BaseModel, Field, field_validator #importantes para decirle a fastapi que debe validar y restrigir a quienes las usan
-from typing import List,Optional # para determinar si es opcional el contenido de un campo, es decir puede ser null o none
+from typing import List,Optional #para determinar si es opcional el contenido de un campo, es decir puede ser null o none
 from uuid import UUID
 from datetime import datetime
 from enum import Enum
@@ -76,13 +76,11 @@ class ConsultaEstimacionRuta(BaseModel):
     origen_longitud: float = Field(...,ge=-180,le=180)
     destino_latitud: float = Field(...,ge=-90,le=90)
     destino_longitud: float = Field(...,ge=-180,le=180)
-    tipo_vehiculo: VehiculosSoportados = Field(...,description="solo n posibles datos en mayusculas definidas en la enumeracion")
+    tipo_vehiculo: Optional[VehiculosSoportados] = None
 
 class ResultadoEstimacionRuta(BaseModel):
-    origen:Coordenada = Field(...,description="coordenadas lat y lon del origen")
-    destino:Coordenada = Field(...,description="coordenadas lat y lon del destino")
     distancia_estimada_km: float = Field(...,description="distancia entre conductor y cliente")
-    eta_minutos:int = Field(...,description="tiempo entre conductor cliente")
+    eta_minutos:int = Field(...,description="tiempo entre origen y destino")
     calculado_en:datetime = Field(...,description="tiempo en que fue enviado/calculado")
     fuente:FuenteInfo = Field(...,description="fuente de la informacion")
 

@@ -82,12 +82,10 @@ def RealizarGeocodificacion(datos:ConsultaGeocodificacion):
     resultado=obtener_coordenadas(datos)
     return resultado
 
-@ruta3.get("/estimacionruta",response_model=ResultadoEstimacionRuta,status_code=200,description="")
-async def RealizarCalculosEstimados(request:Request):
-    #se pasa los headers o mejor dicho los params_query a un diccionario y comprobarlo con pydantic
-    #pydantic tiene metodos asociados para comprobar la variable, investigarlo
-    datos=["los datos del query parameters del request"]
-    resultado=CalculosDeViaje(datos)
+@ruta3.get("/estimacionruta",response_model=ResultadoEstimacionRuta,status_code=200)
+async def RealizarCalculosEstimados(params: ConsultaEstimacionRuta = Depends()):
+    #se pasa los headers o mejor dicho los params_query validados, sino error de formato pydantic
+    resultado=CalculosDeViaje(params)
     return resultado
 
 @ruta4.post("/conductores/{conductor_id}/reserva",response_model=SolicitudReserva,status_code=201,
