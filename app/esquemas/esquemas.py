@@ -98,6 +98,25 @@ class ResultadoEstimacionRuta(BaseModel):
     calculado_en:datetime = Field(...,description="tiempo en que fue enviado/calculado")
     fuente:FuenteInfo = Field(...,description="fuente de la informacion")
 
+class QueryCercanos(BaseModel):
+    origen_latitud: float = Field(...,ge=-90,le=90)
+    origen_longitud: float = Field(...,ge=-180,le=180)
+    tipo_vehiculo: VehiculosSoportados = Field(description="solo n posibles datos en mayusculas definidas en la enumeracion")
+    radio_km: float = Field(...,gt=0,description="radio de busqueda en kilometros, debe ser mayor a 0")
+    limite: Optional[int] = Field(default=10, ge=0, description="limite de resultados a devolver, debe ser mayor a 0")
+
+class Candidatos(BaseModel):
+    conductor_id: UUID = Field(..., description="Identificador único del conductor")
+    distancia_origen_km: float = Field(..., description="Distancia entre el conductor y el origen en kilómetros")
+    eta_retiro_minutos: Optional[int] = Field(ge=0,description="Tiempo estimado de llegada del conductor al origen en minutos")
+    tipo_vehiculo: VehiculosSoportados = Field(..., description="Tipo de vehículo del conductor")
+
+class ResultadoBusquedaConductores(BaseModel):
+    conductores: List[Candidatos] = Field(description="lista de conductores encontrados, puede estar vacia si no hay coincidencias")
+    radio_aplicado_km: float = Field(...,ge=0, description="radio de busqueda aplicado en kilometros")
+    generado_en: datetime = Field(...,description="timestamp de generacion del resultado en formato ISO 8601")
+    
+
 
 #se usara fieldvalidator para validar entradas por pydantic y que salte antes de entrar a codigo una exepcion de error
 #especifica

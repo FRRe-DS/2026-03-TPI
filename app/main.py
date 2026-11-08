@@ -19,7 +19,7 @@ from app.servicios.manejarReserva import RegistrarReserva
 from app.seguridad.idempotenciaManager import verificar_idempotencia
 from .errores.exceptionsSemanticos import ErrorHealthCheck
 from .db.cache_config import cache
-
+from .servicios.candidatosCercanos import CandidatosCercanos
 Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya existia, no hace nada. 
 #Esto es para inicializar la base de datos y crear las tablas que se definan en models.py que hereden de Base.
 
@@ -112,6 +112,11 @@ async def RealizarCalculosEstimados(request:Request):
             description="La reserva temporal se creó para esta solicitud.",)
 async def RealizarReserva(datos:SolicitudReserva,idempotency_key: str = Depends(verificar_idempotencia)):
     resultado=RegistrarReserva()
+    return resultado
+
+@ruta4.post("/conductores/cercanos",response_model=ResultadoBusquedaConductores,status_code=200)
+def BuscarConductoresCercanos(query: QueryCercanos):
+    resultado = CandidatosCercanos.buscar(query)
     return resultado
 
 @ruta5.get("/live", status_code=200)

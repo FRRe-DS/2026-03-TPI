@@ -5,8 +5,6 @@ from app.db.cache_config import cache
 from datetime import datetime
 from app.esquemas.esquemas import EstadoTmp,Coordenada
 
-#mal definidos todos, si son tablas deberan usar atributo coleccion y ahi recien la definicion normal
-
 class ConductorCache(HashModel):
     # Campos primitivos con tipos de datos comunes estrictos
     conductor_id: int = Field(..., index=True)  # Indexado para búsquedas rápidas
@@ -49,7 +47,7 @@ class CacheEstOp(HashModel):
     conductor_id: UUID = Field(...,index=True)
     event_id: None = Field(description="a confirmar con m3")
     connected:bool = Field(...,description="si es true el conductor desea esta conectado a la app")
-    avalible:bool = Field(...,description="si es true el conductor desea recibir solicitudes")
+    available:bool = Field(...,description="si es true el conductor desea recibir solicitudes")
     actualizado_en: datetime = Field()
     recibido_en: datetime = Field(...,description="util para determinar cuando dejamos de recibir act")
     class Meta:
