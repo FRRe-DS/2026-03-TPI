@@ -1,10 +1,10 @@
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException, status
 from redis_om.model import NotFoundError
 from app.modelos.cache_models import UbicacionesCond  
 from app.esquemas.esquemas import ActualizarUbicacion, UbicacionRegistrada, Coordenada 
-from ..errores.exceptionsSemanticos import ErrorTimeStamp
+from app.errores.exceptionsSemanticos import ErrorTimeStamp
 
 class ActualizarUbicacionService:
     @staticmethod

@@ -5,13 +5,13 @@ mas lento y costoso, ademas de que el diccionario puede ser actualizado y mejora
 """
 import json
 from pathlib import Path
-from .adaptador import AdaptadorGeoCodificacion
-from ..esquemas.esquemas import ConsultaGeocodificacion
+from app.servicios.adaptador import GeoProveedor
+from app.esquemas.esquemas import ConsultaGeocodificacion
 import unicodedata
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-class Dicc_geocodif(AdaptadorGeoCodificacion):
+class Dicc_geocodif(GeoProveedor):
 
     def __init__(self, ruta: str = str(BASE_DIR / "data" / "cache_geografico_nea.json")):
         # Se ejecuta UNA SOLA VEZ al iniciar la app, cargando el archivo en RAM

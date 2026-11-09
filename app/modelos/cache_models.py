@@ -1,9 +1,21 @@
-from pydantic import BaseModel, Field, field_validator, Dict, Any
+from typing import Dict, Any
+from pydantic import BaseModel, Field, field_validator
 from redis_om import HashModel
 from uuid import UUID
 from app.db.cache_config import cache
 from datetime import datetime
-from app.esquemas.esquemas import EstadoTmp,Coordenada
+from app.esquemas.esquemas import EstadoTmp, Coordenada
+from enum import Enum
+
+# --- PARCHES TEMPORALES (Simulando lo que falta importar/crear) ---
+class EstadoConductor(str, Enum):
+    DESCONECTADO = "DESCONECTADO"
+    CONECTADO = "CONECTADO"
+    OCUPADO = "OCUPADO"
+
+class DetalleVehiculo(BaseModel):
+    modelo: str = "Simulado"
+# ------------------------------------------------------------------
 
 #mal definidos todos, si son tablas deberan usar atributo coleccion y ahi recien la definicion normal
 
@@ -17,12 +29,9 @@ class ConductorCache(HashModel):
     activo: bool = True
     
     # Campo Compuesto / Anidado:
-    # Como Redis Hash solo guarda texto, lo manejamos como un diccionario/objeto de Pydantic.
-    # Redis OM lo serializará automáticamente a texto plano por detrás.
     vehiculo: DetalleVehiculo
 
-    # 4. VALIDACIONES PERSONALIZADAS (Reglas de negocio estrictas)
-    # Si las coordenadas están fuera de rango, el backend frena la petición de inmediato
+    # 4. VALIDACIONES PERSONALIZADAS
     @field_validator("latitud")
     def validar_latitud(cls, v):
         if not (-90.0 <= v <= 90.0):
@@ -36,7 +45,7 @@ class ConductorCache(HashModel):
         return v
 
     class Meta:
-        database = redis_cache  # Vinculamos este modelo a tu conexión centralizada
+        database = cache  # <-- Corregido: variable unificada con el import
 
 class UbicacionesCond(HashModel):#usa ttl
     conductor_id: UUID = Field(...,primary_key=True,description="id del conductor que reporta la ubicacion")

@@ -31,4 +31,4 @@ async def verificar_idempotencia(request: Request, response: Response):
             content=campo.body
         )
     #Si la llave NO existe, cedemos el control para que se ejecute el endpoint de negocio
-    yield idempotency_key
+    return idempotency_key

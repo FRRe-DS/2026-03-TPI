@@ -7,18 +7,22 @@ Asi como la inyeccion de dependencias para la base de datos.
 Y codigo autoejecutable segun decoradores, los cuales responden a los endpoints de la API.
 ============================================================
 """
-from db.database_config import engine, Base #se importan para crear las tablas en la base de datos, y para poder realizar consultas a la bd
-from modelos import db_models #se importa models para que se ejecute el codigo de models.py y se creen las tablas en la base de datos
-from fastapi import FastAPI, Request, APIRouter, HTTPException,Depends
+from app.db.database_config import engine, Base #se importan para crear las tablas en la base de datos, y para poder realizar consultas a la bd
+from app.modelos import db_models #se importa models para que se ejecute el codigo de models.py y se creen las tablas en la base de datos
+from fastapi import FastAPI, Request, APIRouter, HTTPException, Depends, status
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 import logging,uuid,re
 from app.esquemas.esquemas import *
-from errores.handlerManager import registrar_manejadores_excepciones
+from app.errores.handlerManager import registrar_manejadores_excepciones
 from app.servicios.cadenaDeProveedores import AdaptadorEncadenado
 from app.servicios.calculosDeEstimacion import CalculosDeViaje
 from app.servicios.manejarReserva import RegistrarReserva
+from app.servicios.actualizarUbicacion import ActualizarUbicacionService
 from app.seguridad.idempotenciaManager import verificar_idempotencia
-from .errores.exceptionsSemanticos import ErrorHealthCheck
-from .db.cache_config import cache
+from app.errores.exceptionsSemanticos import ErrorHealthCheck
+from app.db.cache_config import cache
+from fastapi import Response
 
 Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya existia, no hace nada. 
 #Esto es para inicializar la base de datos y crear las tablas que se definan en models.py que hereden de Base.
@@ -123,7 +127,7 @@ def consultar_liveness():
     """
     return {"status": "UP"}
 
-@ruta5.get("ready", status_code=200)
+@ruta5.get("/ready", status_code=200)
 def consultar_readiness():
     """
     READINESS:
@@ -151,3 +155,25 @@ def consultar_readiness():
             detail="El motor de caché Redis no responde a las solicitudes de ping.")
 
     return {"status": "READY"}
+
+
+class EventoDePrueba(BaseModel):
+    evento_id: UUID
+    lat: float = Field(..., ge=-90, le=90)
+    lon: float = Field(..., ge=-180, le=180)
+    ubicacion_texto: str | None = None
+
+
+@app.post("/PruebaM4/Piloto", tags=["Pruebas"])
+def procesar_evento_piloto(datos: EventoDePrueba):
+    if not (-28.5 <= datos.lat <= -27.2 and -59.5 <= datos.lon <= -58.7):
+        raise HTTPException(status_code=400, detail="Ubicación fuera de la zona de cobertura")
+    return {
+        "estado": "PROCESADO_EXITOSAMENTE",
+        "evento_id": datos.evento_id,
+        "detalles_externos": {"modulo_origen_id": datos.evento_id},
+    }
+
+
+for router in (ruta1, ruta2, ruta3, ruta4, ruta5):
+    app.include_router(router)

@@ -98,7 +98,10 @@ class ResultadoEstimacionRuta(BaseModel):
     calculado_en:datetime = Field(...,description="tiempo en que fue enviado/calculado")
     fuente:FuenteInfo = Field(...,description="fuente de la informacion")
 
-
+class SolicitudReserva(BaseModel):
+    reserva_id: UUID = Field(..., description="ID temporal de la reserva simulada")
+    conductor_id: UUID = Field(..., description="ID del conductor reservado")
+    estado: EstadoTmp = Field(default=EstadoTmp.RESERVADO, description="Estado de la reserva")
 #se usara fieldvalidator para validar entradas por pydantic y que salte antes de entrar a codigo una exepcion de error
 #especifica
 #ojo con los string se debe verificar que no es un espacio en blanco " ", asi que se debe validar con la funcion
