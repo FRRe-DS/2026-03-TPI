@@ -32,17 +32,21 @@ def registrar_manejadores_excepciones(app: FastAPI):
 
     @app.exeption_handler(ProblemaGenerico) #familia de errores genericos
     async def HandlerGenerico(request:Request,exc:ProblemaGenerico):
-        trace_id = getattr(request.state, "xrequest_id", None)
+        trace_id = getattr(request.state, "xrequest_id")
         contenido={
             "type": exc.type,
             "title": exc.title,
             "status": exc.status_code,
             "detail": exc.detail,
             "instance": str(request.url.path),
-            "trace_id":trace_id
+            "trace_id": trace_id
         }
+        
         if exc.code is not None:
             contenido["code"] = exc.code
+        if exc.invalid_params is not None:
+            contenido["invalid_params"] = exc.invalid_params
+        
         
         return JSONResponse(
                     status_code=exc.status_code,
@@ -53,18 +57,24 @@ def registrar_manejadores_excepciones(app: FastAPI):
     @app.exception_handler(ProblemaDominio) #familia de errores del domino
     async def HandlerDominio(request:Request,exc:ProblemaDominio):
         trace_id = getattr(request.state, "xrequest_id", None)
+        contenido={
+                    "type": exc.type,
+                    "title": exc.title,
+                    "status": exc.status_code,
+                    "detail": exc.detail,
+                    "instance": str(request.url.path),
+                    "trace_id": trace_id
+                }
+        
+        if exc.code is not None:
+            contenido["code"] = exc.code
+        if exc.invalid_params is not None:
+                    contenido["invalid_params"] = exc.invalid_params
+
         return JSONResponse(
-                    status_code=exc.status_code,
-                    headers={"Content-Type": "application/problem+json"},
-                    content={# code aqui esta en duda si siempre aparece o es cirscunstancial
-                        "type": exc.type,
-                        "title": exc.title,
-                        "status": exc.status_code,
-                        "detail": exc.detail,
-                        "instance": str(request.url.path),
-                        "code":exc.code,
-                        "trace_id":trace_id
-                    }
+            status_code=exc.status_code,
+            headers={"Content-Type": "application/problem+json"},
+            content=contenido   
         )
 
     @app.exception_handler(Exception)  # Captura cualquier error no controlado en la app

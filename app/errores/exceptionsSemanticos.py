@@ -2,7 +2,8 @@ from fastapi import Request
 from app.main import logger
 
 class ProblemaGenerico (Exception):
-    def __init__(self, type: str = "about:blank", title: str = "", status_code: int = None, detail: str = "", instance: str = "", code: str = None, trace_id: str = None, invalid_params = None):
+    def __init__(self, type: str = "about:blank", title: str = "", status_code: int = None, 
+                detail: str = "", instance: str = "", code: str = None, trace_id: str = None, invalid_params = None):
         if not (400 <= status_code <= 599):
             raise ValueError(
                 f"El código de estado HTTP '{status_code}' es inválido para un problema. "
@@ -38,12 +39,20 @@ class ProblemaDominio (Exception):
         super().__init__(detail)
 
 class NoAutenticado (ProblemaGenerico):
-    # 401
-    pass
+    def __init__(self, detail:str="Falla en autenticacion o certificados no validos"):
+            super().__init__(
+                title = "No Autenticado",
+                status_code = 401,
+                detail = detail,
+                code = "NO_AUTENTICADO")
 
 class SinPermiso (ProblemaGenerico):
-    # 403
-    pass
+    def __init__(self, detail:str="El usuario no posee los permisos necesarios para acceder a este recurso"):
+        super().__init__(
+            title = "Sin Permiso",
+            status_code = 403,
+            detail = detail,
+            code = "SIN_PERMISO")
 
 class NoProcesable (ProblemaDominio):
     # 422
@@ -87,4 +96,22 @@ class HashBodyDiferente(ProblemaDominio):
             status_code = 409,
             detail = detail,
             code = "IDEMPOTENCIA_CONFLICTO"
+        )
+
+class ErrorTimeStamp(ProblemaGenerico):
+    def __init__(self, detail:str="Timestamp anterior a la ubicación vigente, o mismo timestamp con coordenadas distintas."):
+        super().__init__(
+            title = "Conflicto",
+            status_code = 409,
+            detail = detail,
+            code = "CONFLICTO_TIMESTAMP")
+
+class ErrorHealthCheck(ProblemaDominio):
+    def __init__(self, detail:str="Fallo en la verificacion de salud del servicio"):
+        super().__init__(
+            type = "/errores/healthcheck/",
+            title = "Fallo en Health Check",
+            status_code = 503,
+            detail = detail,
+            code = "HEALTH_CHECK_FALLO"
         )

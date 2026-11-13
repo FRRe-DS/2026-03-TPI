@@ -5,8 +5,6 @@ from app.db.cache_config import cache
 from datetime import datetime
 from app.esquemas.esquemas import EstadoTmp,Coordenada
 
-#mal definidos todos, si son tablas deberan usar atributo coleccion y ahi recien la definicion normal
-
 class ConductorCache(HashModel):
     # Campos primitivos con tipos de datos comunes estrictos
     conductor_id: int = Field(..., index=True)  # Indexado para búsquedas rápidas
@@ -38,10 +36,10 @@ class ConductorCache(HashModel):
     class Meta:
         database = redis_cache  # Vinculamos este modelo a tu conexión centralizada
 
-class CacheUbicacionesCond(HashModel):#usa ttl
-    conductor_id: UUID = Field(...,index=True,description="id del conductor que reporta la ubicacion")
-    geo:Coordenada = Field()
-    timestamp_ubicacion: datetime =Field(...,description="")
+class UbicacionesCond(HashModel):#usa ttl
+    conductor_id: UUID = Field(...,primary_key=True,description="id del conductor que reporta la ubicacion")
+    geo:Coordenada = Field(...)
+    timestamp_ubicacion: datetime =Field(...)
     class Meta:
         database = cache
 
@@ -49,7 +47,7 @@ class CacheEstOp(HashModel):
     conductor_id: UUID = Field(...,index=True)
     event_id: None = Field(description="a confirmar con m3")
     connected:bool = Field(...,description="si es true el conductor desea esta conectado a la app")
-    avalible:bool = Field(...,description="si es true el conductor desea recibir solicitudes")
+    available:bool = Field(...,description="si es true el conductor desea recibir solicitudes")
     actualizado_en: datetime = Field()
     recibido_en: datetime = Field(...,description="util para determinar cuando dejamos de recibir act")
     class Meta:
