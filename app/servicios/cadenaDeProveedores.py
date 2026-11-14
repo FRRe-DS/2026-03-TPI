@@ -1,6 +1,6 @@
 from app.esquemas.esquemas import ConsultaGeocodificacion
-from .geoCodif_diccionario import Dicc_geocodif
-from .geocodif_Geopy import ProovedorGeoRef_Geopy
+from app.servicios.geocodif_diccionario import Dicc_geocodif
+from app.servicios.geocodif_Geopy import ProovedorGeoRef_Geopy
 
 class AdaptadorEncadenado:
     """
