@@ -30,7 +30,7 @@ def registrar_manejadores_excepciones(app: FastAPI):
             }
         )
 
-    @app.exeption_handler(ProblemaGenerico) #familia de errores genericos
+    @app.exception_handler(ProblemaGenerico) #familia de errores genericos
     async def HandlerGenerico(request:Request,exc:ProblemaGenerico):
         trace_id = getattr(request.state, "xrequest_id")
         contenido={
