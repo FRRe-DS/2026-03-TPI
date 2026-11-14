@@ -15,9 +15,9 @@ from enum import Enum
 '''
 importante, si un dato no viene y DEBE fallar, es decir es obligatorio el dato, debe ir ... en field si o si
 '''
-class EstadoTmp(str,Enum):
+'''class EstadoTmp(str,Enum):
     RESERVADO="RESERVADO"
-    LIBERADO="LIBERADO"
+    LIBERADO="LIBERADO"'''
 
 class Coordenada(BaseModel):
     latitud: float = Field(..., ge=-90.0, le=90.0, description="Latitud en grados decimales")
@@ -127,4 +127,24 @@ class ResultadoBusquedaConductores(BaseModel):
 
 400: La estructura era correcta, pero el contenido rompió una regla de negocio (Dominio / Tus excepciones).
 """
+# Codigo utilizado para resolver RF 4.4 (reserva):
 
+# 1. Asegurar los 3 estados oficiales del contrato OpenAPI:
+class EstadoTmp(str, Enum):
+    RESERVADO = "RESERVADO"
+    OFERTA_ACEPTADA = "OFERTA_ACEPTADA"
+    OFERTA_RECHAZADA = "OFERTA_RECHAZADA"
+
+# 2. Esquema de ENTRADA (lo que nos envía M5 en el body):
+class CambioReservaTemporal(BaseModel):
+    solicitud_id: UUID = Field(..., description="Identificador único de la solicitud de viaje")
+    estado_temporal: EstadoTmp = Field(..., description="RESERVADO, OFERTA_ACEPTADA u OFERTA_RECHAZADA")
+
+# 3. Esquema de SALIDA (lo que respondemos):
+class ResultadoReservaTemporal(BaseModel):
+    conductor_id: UUID = Field(..., description="ID del conductor")
+    solicitud_id: UUID = Field(..., description="ID de la solicitud")
+    estado_temporal: EstadoTmp = Field(..., description="Estado resultante de la reserva")
+    actualizado_en: datetime = Field(..., description="Momento de actualización en formato UTC")
+    expira_en: Optional[datetime] = Field(default=None, description="Fecha de expiración si está RESERVADO (10 min)")
+    idempotente: Optional[bool] = Field(default=False, description="Indica si la solicitud ya había sido aplicada antes")
