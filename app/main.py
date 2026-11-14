@@ -7,28 +7,40 @@ Asi como la inyeccion de dependencias para la base de datos.
 Y codigo autoejecutable segun decoradores, los cuales responden a los endpoints de la API.
 ============================================================
 """
-from db.database_config import engine, Base #se importan para crear las tablas en la base de datos, y para poder realizar consultas a la bd
-from modelos import db_models #se importa models para que se ejecute el codigo de models.py y se creen las tablas en la base de datos
+from app.db.database_config import engine, Base #se importan para crear las tablas en la base de datos, y para poder realizar consultas a la bd
+from app.modelos import db_models #se importa models para que se ejecute el codigo de models.py y se creen las tablas en la base de datos
 from fastapi import FastAPI, Request, APIRouter, HTTPException,Depends
 import logging,uuid,re
-from app.esquemas.esquemas import *
-from errores.handlerManager import registrar_manejadores_excepciones
-from app.servicios.cadenaDeProveedores import AdaptadorEncadenado
-from app.servicios.calculosDeEstimacion import CalculosDeViaje
-from app.servicios.manejarReserva import RegistrarReserva
-from app.seguridad.idempotenciaManager import verificar_idempotencia
-from .errores.exceptionsSemanticos import ErrorHealthCheck
-from .db.cache_config import cache
-from .servicios.candidatosCercanos import CandidatosCercanos
-Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya existia, no hace nada. 
-#Esto es para inicializar la base de datos y crear las tablas que se definan en models.py que hereden de Base.
-
-REQUEST_ID_PATTERN = re.compile(r'^[A-Za-z0-9._-]{1,128}$')
 # Configuración básica para que los mensajes salgan en tu terminal (consola)
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("m4_backend")
+
+from app.esquemas.esquemas import *
+from app.errores.handlerManager import registrar_manejadores_excepciones
+from app.servicios.cadenaDeProveedores import AdaptadorEncadenado
+from app.servicios.calculosDeEstimacion import CalculosDeViaje
+#from app.servicios.manejarReserva import RegistrarReserva
+from app.seguridad.idempotenciaManager import verificar_idempotencia
+from app.errores.exceptionsSemanticos import ErrorHealthCheck
+from app.db.cache_config import cache
+from app.servicios.candidatosCercanos import CandidatosCercanos
+# Nuevas importciones para resolver RF 4.4 (reserva temporal) y cumplir con los 3 estados oficiales del contrato OpenAPI:
+from app.esquemas.esquemas import CambioReservaTemporal, ResultadoReservaTemporal
+from app.servicios.manejarReserva import ReservaService
+from fastapi import Response, status
+from uuid import UUID
+from app.servicios.actualizarUbicacion import ActualizarUbicacionService
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+
+
+Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya existia, no hace nada. 
+#Esto es para inicializar la base de datos y crear las tablas que se definan en models.py que hereden de Base.
+
+REQUEST_ID_PATTERN = re.compile(r'^[A-Za-z0-9._-]{1,128}$')
+
 
 # Instanciamos la aplicación principal de FastAPI
 app = FastAPI(
@@ -108,10 +120,30 @@ async def RealizarCalculosEstimados(request:Request):
 
 #posiblemente deberia colocar dentro del decorador del endpoint el Depends(verificar_rol("disponibilidad-be")) 
 #para que se ejecute la verificacion de rol y si no cumple con el rol requerido, se lanza un error y ni entra en el endpoint
-@ruta4.post("/conductores/{conductor_id}/reserva",response_model=SolicitudReserva,status_code=201,
+'''@ruta4.post("/conductores/{conductor_id}/reserva",response_model=SolicitudReserva,status_code=201,
             description="La reserva temporal se creó para esta solicitud.",)
 async def RealizarReserva(datos:SolicitudReserva,idempotency_key: str = Depends(verificar_idempotencia)):
     resultado=RegistrarReserva()
+    return resultado'''
+# Se cambio por este codigo para resolver el RF 4.4 (reserva) y cumplir con los 3 estados oficiales del contrato OpenAPI:
+@ruta4.post(
+    "/conductores/{conductor_id}/reserva",
+    response_model=ResultadoReservaTemporal,
+    description="Reservar temporalmente o informar el resultado de la oferta"
+)
+async def RealizarReserva(
+    conductor_id: UUID,
+    datos: CambioReservaTemporal,
+    response: Response,
+    idempotency_key: str = Depends(verificar_idempotencia)
+):
+    resultado, es_nueva_reserva = ReservaService.cambiar_reserva(conductor_id, datos)
+    
+    # Si se creó la reserva temporal devolvemos 201; si se actualizó devolvemos 200
+    if es_nueva_reserva:
+        response.status_code = status.HTTP_201_CREATED
+    else:
+        response.status_code = status.HTTP_200_OK
     return resultado
 
 @ruta4.post("/conductores/cercanos",response_model=ResultadoBusquedaConductores,status_code=200)
