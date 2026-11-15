@@ -4,7 +4,9 @@ from uuid import UUID
 from geopy.distance import geodesic
 from app.db.cache_config import cache
 from app.modelos.cache_models import UbicacionesCond, CacheEstOp, CacheResTemp
-from app.esquemas import QueryCercanos, ResultadoBusquedaConductores, Candidatos, VehiculosSoportados
+#from app.esquemas import QueryCercanos, ResultadoBusquedaConductores, Candidatos, VehiculosSoportados
+from app.esquemas.esquemas import QueryCercanos, ResultadoBusquedaConductores, Candidatos, VehiculosSoportados
+
 
 def _mock_verificar_habilitacion_m3(conductor_id: UUID, tipo_vehiculo: VehiculosSoportados) -> bool:
     """
