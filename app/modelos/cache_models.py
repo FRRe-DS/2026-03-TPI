@@ -1,11 +1,22 @@
-from pydantic import BaseModel, Field, field_validator, Dict, Any
+'''from pydantic import BaseModel, Field, field_validator, Dict, Any'''
+from pydantic import BaseModel, Field, field_validator
+from typing import Dict, Any
 from redis_om import HashModel
 from uuid import UUID
 from app.db.cache_config import cache
 from datetime import datetime
 from app.esquemas.esquemas import EstadoTmp,Coordenada
 
-class ConductorCache(HashModel):
+from enum import Enum
+
+class EstadoConductor(str, Enum):
+    DESCONECTADO = "DESCONECTADO"
+    DISPONIBLE = "DISPONIBLE"
+    RESERVADO = "RESERVADO"
+    OCUPADO = "OCUPADO"
+
+
+'''class ConductorCache(HashModel):
     # Campos primitivos con tipos de datos comunes estrictos
     conductor_id: int = Field(..., index=True)  # Indexado para búsquedas rápidas
     latitud: float
@@ -34,7 +45,7 @@ class ConductorCache(HashModel):
         return v
 
     class Meta:
-        database = redis_cache  # Vinculamos este modelo a tu conexión centralizada
+        database = redis_cache  # Vinculamos este modelo a tu conexión centralizada'''''
 
 class UbicacionesCond(HashModel):#usa ttl
     conductor_id: UUID = Field(...,primary_key=True,description="id del conductor que reporta la ubicacion")
