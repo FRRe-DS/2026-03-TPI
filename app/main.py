@@ -84,6 +84,11 @@ ruta3 = APIRouter(prefix="/api/v1",tags=["Rutas"])
 ruta4 = APIRouter(prefix="/api/v1",tags=["Disponibilidad"])
 ruta5 = APIRouter(prefix="/health",tags=["Salud"])
 adaptadorJerarquico = AdaptadorEncadenado()
+app.include_router(ruta1)
+app.include_router(ruta2)
+app.include_router(ruta3)
+app.include_router(ruta4)
+app.include_router(ruta5)
 
 #en cada endpoint se colocaria dependencies=[Depends(verificar_rol("ubicacion-be"))], antes del reesponse_model
 #para que se ejecute la verificacion de rol y si no cumple con el rol requerido, se lanza un error 403
