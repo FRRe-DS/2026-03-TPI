@@ -65,7 +65,7 @@ services: # palabra reservada que indica que todo lo de abajo identado dentro de
     image: redis:7-alpine # Imagen liviana basada en alpine, ideal para caché
     container_name: m4cache # Nombre visual en la terminal al hacer 'docker ps'
     ports:
-      - "6379:6379" # Puerto por defecto de Redis (IzquierdaPC:DerechaContenedor)
+      - "6379" # Puerto por defecto de Redis (IzquierdaPC:DerechaContenedor)
     env_file:
       - .env # Inyecta las variables REDIS_HOST y REDIS_PORT dentro del contenedor
     # Comando para asegurar que Redis no consuma toda la RAM de la PC
@@ -73,6 +73,13 @@ services: # palabra reservada que indica que todo lo de abajo identado dentro de
     networks:              # <--- ¡AGREGADO! Para que se conecte con la API
       - global_network
 
+  # El Frontend oficial provisto por la cátedra
+  frontend:
+    image: ghcr.io/frre-ds/ds-2026-frontend:latest
+    ports:
+      - "3000:80" # O el puerto por el que exponga la interfaz
+    networks:
+      - global_network
 
   api: #es el nombre del servicio que se despliega, es mas facil que quede predeterminado
     build: . # le dice donde tiene que buscar el dockerfile, en este caso en el directorio actual
