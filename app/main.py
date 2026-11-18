@@ -66,17 +66,17 @@ el codigo, si algo saliera mal no haria falta buscar tanto codigo o como premisa
 cumplir su responsabilidad asociada.
 
 '''
-ruta1 = APIRouter(prefix="/api/v1",tags=["Ubicaciones"])
-ruta2 = APIRouter(prefix="/api/v1",tags=["Geocodificacion"])
-ruta3 = APIRouter(prefix="/api/v1",tags=["Rutas"])
-ruta4 = APIRouter(prefix="/api/v1",tags=["Disponibilidad"])
-ruta5 = APIRouter(prefix="/health",tags=["Salud"])
+ruta1 = APIRouter(prefix="/api/v1/",tags=["Ubicaciones"])
+ruta2 = APIRouter(prefix="/api/v1/",tags=["Geocodificacion"])
+ruta3 = APIRouter(prefix="/api/v1/",tags=["Rutas"])
+ruta4 = APIRouter(prefix="/api/v1/",tags=["Disponibilidad"])
+ruta5 = APIRouter(prefix="/health/",tags=["Salud"])
 adaptadorJerarquico = AdaptadorEncadenado()
 
 #en cada endpoint se colocaria dependencies=[Depends(verificar_rol("ubicacion-be"))], antes del reesponse_model
 #para que se ejecute la verificacion de rol y si no cumple con el rol requerido, se lanza un error 403
 
-@ruta1.put("/conductores/{conductor_id}/ubicacion",response_model=UbicacionRegistrada)
+@ruta1.put("conductores/{conductor_id}/ubicacion",response_model=UbicacionRegistrada)
 def endpoint_actualizar_ubicacion(
     conductor_id: UUID,                     # <--- Viene mágicamente de la URL y se valida como UUID
     datos: ActualizarUbicacion,             # <--- Viene del Body de la petición validado por Pydantic
@@ -91,14 +91,14 @@ def endpoint_actualizar_ubicacion(
         response.status_code = status.HTTP_200_OK
     return resultado
 
-@ruta2.post("/geocodificaciones",response_model=ResultadoGeocodificacion,status_code=200,
+@ruta2.post("geocodificaciones",response_model=ResultadoGeocodificacion,status_code=200,
             description="Consulta realizada; coincidencias puede ser una lista vacía.")
 def RealizarGeocodificacion(datos:ConsultaGeocodificacion):
     #si regla de negocio dictara solo argentina entonces aqui va la validacion y si da error es 422
     resultado = adaptadorJerarquico.resolver(datos)
     return resultado
 
-@ruta3.get("/estimacionruta",response_model=ResultadoEstimacionRuta,status_code=200,description="")
+@ruta3.get("estimacionruta",response_model=ResultadoEstimacionRuta,status_code=200,description="")
 async def RealizarCalculosEstimados(request:Request):
     #se pasa los headers o mejor dicho los params_query a un diccionario y comprobarlo con pydantic
     #pydantic tiene metodos asociados para comprobar la variable, investigarlo
@@ -108,18 +108,18 @@ async def RealizarCalculosEstimados(request:Request):
 
 #posiblemente deberia colocar dentro del decorador del endpoint el Depends(verificar_rol("disponibilidad-be")) 
 #para que se ejecute la verificacion de rol y si no cumple con el rol requerido, se lanza un error y ni entra en el endpoint
-@ruta4.post("/conductores/{conductor_id}/reserva",response_model=SolicitudReserva,status_code=201,
+@ruta4.post("conductores/{conductor_id}/reserva",response_model=SolicitudReserva,status_code=201,
             description="La reserva temporal se creó para esta solicitud.",)
 async def RealizarReserva(datos:SolicitudReserva,idempotency_key: str = Depends(verificar_idempotencia)):
     resultado=RegistrarReserva()
     return resultado
 
-@ruta4.post("/conductores/cercanos",response_model=ResultadoBusquedaConductores,status_code=200)
+@ruta4.post("conductores/cercanos",response_model=ResultadoBusquedaConductores,status_code=200)
 def BuscarConductoresCercanos(query: QueryCercanos):
     resultado = CandidatosCercanos.buscar(query)
     return resultado
 
-@ruta5.get("/live", status_code=200)
+@ruta5.get("live", status_code=200)
 def consultar_liveness():
     """
     LIVENESS:
