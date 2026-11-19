@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'fastapi-replicas'
+    static_configs:
+      - targets: ['stock-replica-1:8000', 'stock-replica-2:8000']
