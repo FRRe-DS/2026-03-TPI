@@ -58,15 +58,15 @@ info:
       desde que M4 acepta la actualización. Las ubicaciones vencidas se excluyen
       de las búsquedas.
 
-    - Idempotencia y concurrencia: la reserva se crea atómicamente. M5 usa una
-      Idempotency-Key distinta para reservar y para informar el resultado de la
-      oferta. Repetir la misma clave con el mismo body devuelve el resultado
-      original sin repetir la operación; reutilizarla con otro body produce
-      422. Una reserva solo puede finalizarse una vez: repetir el mismo estado
-      final no produce cambios y enviar el estado final opuesto produce 409.
-      Si M5 no finaliza la reserva, esta vence a los 10 minutos de su creación.
-      La Idempotency-Key y su resultado se conservan durante 3 horas; un
-      reintento no renueva ni extiende la reserva.
+    - Idempotencia y concurrencia: reservar un conductor es atómico. M5 usa una
+      Idempotency-Key distinta para reservar y para liberar. La misma
+      solicitud_id repetida sobre el mismo conductor no crea una segunda
+      reserva; otra solicitud recibe 409. M5 libera explícitamente su reserva
+      al cerrar la etapa de oferta; repetir la liberación para la misma
+      solicitud_id es idempotente. Si M5 no la libera, la reserva vence a los
+      10 minutos de su creación. M4 conserva la clave de idempotencia y el
+      resultado asociado durante 3 horas desde el primer procesamiento; repetir
+      la clave dentro de esa ventana no renueva ni extiende la reserva.
 
     - Eventos M3: el acuerdo requiere connected y available como
       booleanos y eventos puntuales, no una lista completa. event_id y
@@ -291,13 +291,13 @@ paths:
         datos, M4 no devuelve candidatos sin validar. Esta búsqueda devuelve
         candidatos, pero no reserva a ninguno: la reserva atómica confirma la
         asignación.
-        M5 inicia la búsqueda con radio_km=5. Si la respuesta no contiene
-        candidatos, M5 puede repetirla con radios de 6.5, 8 y 9.5 km, en ese
-        orden. M4 no amplía el radio automáticamente. Si no hay candidatos
-        dentro de 9.5 km, la búsqueda responde 200 con el campo conductores
-        como lista vacía y radio_aplicado_km=9.5. Cada respuesta incluye
-        candidatos ordenados por
-        distancia_origen_km ascendente, del más cercano al más lejano.
+        M4 aplica internamente una búsqueda progresiva: inicia con un radio de
+        5 km y, únicamente si no encuentra candidatos, amplía automáticamente en
+        incrementos de 1.5 km (6.5 km, 8 km y hasta un máximo de 9.5 km). Si no
+        hay candidatos dentro de 9.5 km, responde 200 con conductores como lista
+        vacía y radio_aplicado_km=9.5. Cada respuesta incluye candidatos
+        ordenados por distancia_origen_km ascendente, del más cercano al más
+        lejano.
         La distancia informada es en línea recta desde el origen hasta la última
         ubicación vigente; eta_retiro_minutos es una estimación de ruta si el
         proveedor de mapas está disponible. La respuesta no incluye coordenadas
@@ -331,19 +331,6 @@ paths:
           description: Tipo de servicio solicitado por M5.
           schema:
             $ref: '#/components/schemas/TipoVehiculo'
-        - name: radio_km
-          in: query
-          required: false
-          description: >-
-            Radio de esta consulta. M5 comienza con 5 km y, si no hay
-            candidatos, puede repetirla con 6.5, 8 y 9.5 km, en ese orden.
-            9.5 km es el máximo acordado. M4 no amplía automáticamente el radio.
-          schema:
-            type: number
-            format: double
-            enum: [5, 6.5, 8, 9.5]
-            default: 5
-            example: 5
         - name: limite
           in: query
           required: false
@@ -356,9 +343,9 @@ paths:
       responses:
         '200':
           description: >-
-            Búsqueda realizada. conductores puede ser una lista vacía; si M5
-            consultó hasta 9.5 km y no hay candidatos, M4 devuelve 200 con una
-            lista vacía y radio_aplicado_km igual a 9.5.
+            Búsqueda realizada. conductores puede ser una lista vacía; si tras
+            ampliar automáticamente el radio hasta 9.5 km no hay candidatos, M4
+            devuelve 200 con una lista vacía y radio_aplicado_km igual a 9.5.
           headers:
             X-Request-Id:
               $ref: '#/components/headers/XRequestId'
@@ -409,24 +396,29 @@ paths:
     post:
       tags: [Disponibilidad]
       operationId: cambiarReservaTemporalConductor
-      summary: Reservar temporalmente o informar el resultado de la oferta
+      summary: Reservar temporalmente o liberar un conductor para una solicitud
       description: >-
         Consumidor: M5, mediante identidad de servicio autorizada por M1. M5
         envía estado_temporal=RESERVADO antes o durante el envío de una oferta.
         M4 debe comprobar y crear la reserva atómicamente para evitar que dos
-        solicitudes obtengan el mismo conductor. Si el conductor ya está
-        reservado por otra solicitud, M4 responde 409. Para finalizar la reserva,
-        M5 envía OFERTA_ACEPTADA u OFERTA_RECHAZADA junto con la solicitud_id que
-        originó el bloqueo; solo esa solicitud puede finalizar su propia reserva.
-        Con OFERTA_ACEPTADA, M4 notifica a M3 que el conductor debe pasar a No
-        Disponible. Con OFERTA_RECHAZADA, M4 no notifica a M3 una aceptación ni
-        modifica el estado operativo que M3 administra. La misma solicitud no
-        puede finalizarse con resultados opuestos el primer estado final válido
-        prevalece y un intento posterior con el resultado opuesto responde 409.
-        Para la misma solicitud_id y conductor_id, repetir el mismo estado
-        final no produce cambios. La reserva vence 10
-        minutos después de su creación si M5 no la finaliza antes. M5 debe
-        informar el resultado de la oferta explícitamente y no depender solo del
+        solicitudes obtengan el mismo conductor. La identidad de una reserva es
+        la combinación conductor_id y solicitud_id: esa combinación admite un
+        único ciclo RESERVADO -> LIBERADO y una solicitud_id nueva es necesaria
+        para crear otra reserva del mismo conductor. Repetir RESERVADO con otra
+        Idempotency-Key no crea una segunda reserva: si el ciclo sigue activo,
+        M4 devuelve el resultado de la reserva existente; si ya fue liberado o
+        venció, M4 responde 409 y no lo vuelve a abrir. Si el conductor está
+        reservado por otra solicitud, M4 también responde 409. Para liberar el
+        bloqueo al cerrar la etapa de oferta (por aceptación, rechazo,
+        vencimiento o cancelación), M5 envía estado_temporal=LIBERADO junto con
+        la solicitud_id que originó el bloqueo; solo esa solicitud puede
+        liberar su propia reserva. Repetir LIBERADO para la misma combinación
+        conductor_id y solicitud_id no produce efectos adicionales: con la
+        misma Idempotency-Key M4 reproduce la respuesta original; con otra clave
+        responde 200 indicando estado_temporal=LIBERADO. Si nunca existió una
+        reserva para esa combinación, M4 responde 404. La reserva vence 10
+        minutos después de su creación si M5 no la libera antes. M5 debe
+        liberarla explícitamente al cerrar la oferta y no depender solo del
         vencimiento. Un reintento idempotente no reinicia ni extiende esos 10
         minutos. Se usa POST para preservar la ruta acordada por los grupos.
       x-trazabilidad: [RF-4.4, RF-5.4, RF-5.6, RNF-08, RNF-09, RNF-11]
@@ -444,19 +436,16 @@ paths:
                 value:
                   estado_temporal: RESERVADO
                   solicitud_id: 018f1f20-a128-739e-8af1-4caa35108a91
-              ofertaAceptada:
+              liberar:
                 value:
-                  estado_temporal: OFERTA_ACEPTADA
-                  solicitud_id: 018f1f20-a128-739e-8af1-4caa35108a91
-              ofertaRechazada:
-                value:
-                  estado_temporal: OFERTA_RECHAZADA
+                  estado_temporal: LIBERADO
                   solicitud_id: 018f1f20-a128-739e-8af1-4caa35108a91
       responses:
         '200':
           description: >-
-            Reserva finalizada o solicitud repetida con el mismo resultado final;
-            un reintento idempotente no vuelve a aplicar efectos.
+            Reserva liberada, reserva activa ya existente o liberación repetida
+            para una reserva ya cerrada; las repeticiones no vuelven a aplicar
+            efectos.
           headers:
             X-Request-Id:
               $ref: '#/components/headers/XRequestId'
@@ -480,7 +469,7 @@ paths:
         '403':
           $ref: '#/components/responses/SinPermiso'
         '404':
-          description: Conductor inexistente o reserva activa no encontrada para finalizar.
+          description: Conductor inexistente o nunca existió una reserva para la combinación conductor_id y solicitud_id indicada. Una reserva previamente liberada devuelve 200.
           headers:
             X-Request-Id:
               $ref: '#/components/headers/XRequestId'
@@ -491,8 +480,7 @@ paths:
         '409':
           description: >-
             El conductor ya está reservado por otra solicitud, no es elegible,
-            la solicitud_id no coincide con la reserva activa o se intenta
-            finalizar la misma reserva con un resultado opuesto al ya registrado.
+            o la solicitud_id no coincide con la reserva que se intenta liberar.
           headers:
             X-Request-Id:
               $ref: '#/components/headers/XRequestId'
@@ -508,7 +496,7 @@ paths:
           $ref: '#/components/responses/ErrorInterno'
         '503':
           $ref: '#/components/responses/DependenciaNoDisponible'
-
+          
   /api/v1/rutas/estimacion:
     parameters:
       - $ref: '#/components/parameters/XRequestId'
@@ -732,14 +720,14 @@ components:
       in: header
       required: true
       description: >-
-        Clave única generada y conservada por el consumidor para repetir una
-        operación POST de forma segura. Misma clave y mismo body M4 devuelve
-        el resultado original sin repetir la operación. Misma clave con body
-        distinto: 422. Use una clave distinta para reservar y para informar el
-        resultado de la oferta. M4 conserva la clave y el resultado asociado
-        durante 3 horas desde el primer procesamiento. Repetir la clave dentro
-        de esa ventana no renueva la reserva; una vez vencida, M4 ya no garantiza
-        reconocer la repetición como la misma operación.
+        Clave única generada y conservada por el consumidor para hacer segura
+        la repetición de la misma operación POST. Misma clave y mismo body:
+        M4 devuelve el resultado original sin repetir la operación. Misma clave
+        con body distinto: 422. Use una clave distinta para reservar y para
+        liberar. M4 conserva la clave y el resultado asociado durante 3 horas
+        desde el primer procesamiento. Repetir la clave dentro de esa ventana
+        no renueva la reserva; una vez vencida, M4 ya no garantiza reconocer la
+        repetición como la misma operación.
       schema:
         type: string
         minLength: 1
@@ -781,10 +769,10 @@ components:
       description: Tipo de servicio de vehículo acordado por M3/M4/M5/M7/M9.
     EstadoTemporal:
       type: string
-      enum: [RESERVADO, OFERTA_ACEPTADA, OFERTA_RECHAZADA]
+      enum: [RESERVADO, LIBERADO]
       description: >-
-        RESERVADO crea el bloqueo temporal. OFERTA_ACEPTADA y OFERTA_RECHAZADA
-        son resultados finales que cierran la reserva de esa solicitud.
+        RESERVADO crea el bloqueo temporal. LIBERADO cierra y suelta el bloqueo
+        temporal de esa solicitud.
     ActualizarUbicacion:
       type: object
       additionalProperties: false
