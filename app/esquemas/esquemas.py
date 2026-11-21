@@ -98,6 +98,10 @@ class ResultadoEstimacionRuta(BaseModel):
     calculado_en:datetime = Field(...,description="tiempo en que fue enviado/calculado")
     fuente:FuenteInfo = Field(...,description="fuente de la informacion")
 
+class SolicitudReserva(BaseModel):
+    reserva_id: UUID = Field(..., description="ID temporal de la reserva simulada")
+    conductor_id: UUID = Field(..., description="ID del conductor reservado")
+    estado: EstadoTmp = Field(default=EstadoTmp.RESERVADO, description="Estado de la reserva")
 class QueryCercanos(BaseModel):
     origen_latitud: float = Field(...,ge=-90,le=90)
     origen_longitud: float = Field(...,ge=-180,le=180)

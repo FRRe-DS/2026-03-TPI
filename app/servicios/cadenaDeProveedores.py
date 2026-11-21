@@ -1,6 +1,6 @@
 from app.esquemas.esquemas import ConsultaGeocodificacion
-from .geoCodif_diccionario import Dicc_geocodif
-from .geocodif_Geopy import ProovedorGeoRef_Geopy
+from app.servicios.geocodif_diccionario import Dicc_geocodif
+from app.servicios.geocodif_Geopy import ProovedorGeoRef_Geopy
 
 class AdaptadorEncadenado:
     """
@@ -8,7 +8,7 @@ class AdaptadorEncadenado:
     Permite encadenar múltiples proveedores de geocodificación y buscar en ellos secuencialmente. segun preferencia.
     """
 
-    def __init__(self, body:ConsultaGeocodificacion):
+    def __init__(self):
         #Inicializa el adaptador encadenado con una lista de proveedores.
         #El orden de llamado es el mismo orden de la lista.
         self.proveedorLocal=Dicc_geocodif()
