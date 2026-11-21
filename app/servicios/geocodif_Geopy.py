@@ -14,9 +14,7 @@ lat,long = obtener_coordenadas(direccion)
 
 from geopy.exc import GeocoderTimedOut, GeopyError
 from geopy.geocoders import Nominatim
-import logging
-import threading
-import time
+import logging, threading, time
 from app.errores.exceptionsSemanticos import DependenciaNoDisponible
 from app.esquemas.esquemas import ConsultaGeocodificacion
 from app.servicios.adaptador import GeoProveedor
@@ -27,7 +25,7 @@ class ProovedorGeoRef_Geopy(GeoProveedor):
         # Variables para control de velocidad (Rate Limiting seguro para hilos)
         self._lock = threading.Lock()
         self._ultimo_tiempo_consulta = 0.0
-        self.TIEMPO_ESPERA_SEGUNDOS = 1.5    
+        self.TIEMPO_ESPERA_SEGUNDOS = 1.3    
         # Zona permitida (Resistencia / Corrientes)
         self.ZONA_PERMITIDA = {
             "lat_min": -28.5000,
@@ -88,6 +86,7 @@ class ProovedorGeoRef_Geopy(GeoProveedor):
 
                 return {"coincidencias": geocoincidencias}
             # Actualizamos el timestamp igual para no reintentar instantáneamente si falló
-            except (GeocoderTimedOut, GeopyError):
+            except (GeocoderTimedOut, GeopyError) as e:
                 self._ultimo_tiempo_consulta = time.time()
+                self.logger.warning(f"Geopy no disponible: {type(e).__name__} - {e}")
                 raise DependenciaNoDisponible()# 503

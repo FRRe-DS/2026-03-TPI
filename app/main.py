@@ -99,7 +99,6 @@ def endpoint_actualizar_ubicacion(
 @ruta2.post("geocodificaciones",response_model=ResultadoGeocodificacion,status_code=200,
             description="Consulta realizada; coincidencias puede ser una lista vacía.")
 def RealizarGeocodificacion(datos:ConsultaGeocodificacion):
-    #si regla de negocio dictara solo argentina entonces aqui va la validacion y si da error es 422
     resultado = adaptadorJerarquico.resolver(datos)
     return resultado
 
