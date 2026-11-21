@@ -5,6 +5,9 @@ from geopy.distance import geodesic
 from app.db.cache_config import cache
 from app.modelos.cache_models import UbicacionesCond, CacheEstOp, CacheResTemp
 from app.esquemas import QueryCercanos, ResultadoBusquedaConductores, Candidatos, VehiculosSoportados
+from app.errores.exceptionsSemanticos import DependenciaNoDisponible
+from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutError as RedisTimeoutError
+from redis_om.model.model import NotFoundError
 
 # Radios progresivos según contrato: inicia en 5 km, amplía en +1.5 km hasta máx 9.5 km
 RADIOS_PROGRESIVOS = [5.0, 6.5, 8.0, 9.5]
@@ -24,7 +27,10 @@ class CandidatosCercanos:
         try:
             todas_ubicaciones = UbicacionesCond.find().all()
         except Exception:
-            todas_ubicaciones = []
+            # Redis no disponible → 503, no silenciar el fallo devolviendo lista vacía
+            raise DependenciaNoDisponible(
+                detail="No se pudo acceder al almacén de ubicaciones (Redis). Intente nuevamente en unos instantes."
+            )
 
         candidatos_finales: List[Candidatos] = []
         # radio_aplicado por defecto al máximo (si no hay candidatos en ningún radio)
@@ -54,8 +60,14 @@ class CandidatosCercanos:
                     available = getattr(estado_op, 'available', False)
                     if not estado_op or not connected or not available:
                         continue
+                except NotFoundError:
+                    continue  # sin registro de estado operativo → no es candidato, Redis está vivo
+                except (RedisConnectionError, RedisTimeoutError):
+                    raise DependenciaNoDisponible(
+                        detail="No se pudo verificar el estado operativo del conductor (Redis no disponible)."
+                    )
                 except Exception:
-                    continue  # no se pudo verificar estado operativo, descartar
+                    continue  # dato corrupto u otro error puntual → descartar este candidato
 
                 # Verificar que no tenga reserva temporal activa
                 try: #TODO: Esto puede cambiar por contrato nuevo, verificar. 
