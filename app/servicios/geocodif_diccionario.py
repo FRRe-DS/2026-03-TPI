@@ -24,8 +24,8 @@ class Dicc_geocodif(GeoProveedor):
             if archivo_path.exists():
                 with open(archivo_path, "r", encoding="utf-8") as f:
                     return json.load(f)
-        except Exception as e:
-            self.logger.warning(f"No se pudo cargar el diccionario local: {e}")
+        except Exception:# el .exeption ya muestra el valor de la excepcion al final, asi que no hace falta colocarla, lo hace por detras
+            self.logger.exception("No se pudo cargar el diccionario local: %s")
         return {}
     
     @staticmethod

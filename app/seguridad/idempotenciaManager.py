@@ -11,6 +11,7 @@ async def verificar_idempotencia(request: Request, response: Response):
     #Extraer el header obligatorio exigido por el YAML
     idempotency_key = request.headers.get("idempotencyKey")
     if not idempotency_key:
+        #TODO: aqui posiblemente falte realizar el registro de logger
         raise FaltaHeaderIdempotencia()
     #Calcular el hash SHA-256 del Body actual (policía anti-fraude)
     body_bytes = await request.body()
@@ -26,6 +27,7 @@ async def verificar_idempotencia(request: Request, response: Response):
         if campo.body_hash != body_hash:
             raise HashBodyDiferente() 
         # Si todo coincide perfectamente, devolvemos la respuesta cacheada (Cumple con el 200 OK del YAML)
+        #TODO: aqui posiblemente falte realizar el registro de logger
         raise IdempotenciaCacheEncontrada(status_code=campo.status_code, body=campo.body)
     #Si la llave NO existe, cedemos el control para que se ejecute el endpoint de negocio
     return idempotency_key

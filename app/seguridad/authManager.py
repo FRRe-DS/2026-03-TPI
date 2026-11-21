@@ -19,17 +19,13 @@ def validar_token_keycloak(credenciales: HTTPAuthorizationCredentials = Depends(
         clave = token_publico.get_signing_key_from_jwt(token)
 
         # decodifica, valida firma, algoritmo y expiración
-        verificacion = jwt.decode(
-            token,
-            clave.key,
-            algorithms=["RS256"],
-            options={"verify_aud": False}  # Ajustar si necesitamos audience en Keycloak
-        )
+        verificacion = jwt.decode(token,clave.key,algorithms=["RS256"],options={"verify_aud": False})
+        # Ajustar si necesitamos audience en Keycloak
         return verificacion
 
-    except jwt.ExpiredSignatureError:
+    except jwt.ExpiredSignatureError:#TODO: aqui posiblemente falte realizar el registro de logger
         raise NoAutenticado(detail=f"Certificado de acceso expirado")#401
-    except jwt.PyJWTError as e:
+    except jwt.PyJWTError as e:#TODO: aqui posiblemente falte realizar el registro de logger
         raise NoAutenticado(detail=f"Certificado de acceso inválido o corrupto: {str(e)}")#401
 
 def verificar_rol(rol_requerido: str):
@@ -38,6 +34,7 @@ def verificar_rol(rol_requerido: str):
         roles_usuario = verificacion.get("realm_access", {}).get("roles", [])
         
         if rol_requerido not in roles_usuario:
+            #TODO: aqui posiblemente falte realizar el registro de logger
             raise SinPermiso()#403
         return verificacion
     return dependencia_rol
