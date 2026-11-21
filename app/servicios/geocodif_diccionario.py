@@ -5,8 +5,8 @@ mas lento y costoso, ademas de que el diccionario puede ser actualizado y mejora
 """
 import json
 from pathlib import Path
-from .adaptador import GeoProveedor
-from ..esquemas.esquemas import ConsultaGeocodificacion
+from app.servicios.adaptador import GeoProveedor
+from app.esquemas.esquemas import ConsultaGeocodificacion
 import unicodedata
 
 BASE_DIR = Path(__file__).resolve().parent.parent

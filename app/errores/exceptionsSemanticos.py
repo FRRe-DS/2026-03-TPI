@@ -1,6 +1,7 @@
 from typing import Any
 from fastapi import Request
-from app.main import logger
+import logging
+logger = logging.getLogger(__name__)
 
 class ProblemaGenerico (Exception):
     def __init__(self, type: str = "about:blank", title: str = "", status_code: int = None, 
