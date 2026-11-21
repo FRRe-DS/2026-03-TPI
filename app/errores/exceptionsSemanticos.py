@@ -1,3 +1,4 @@
+from typing import Any
 from fastapi import Request
 from app.main import logger
 
@@ -115,3 +116,13 @@ class ErrorHealthCheck(ProblemaDominio):
             detail = detail,
             code = "HEALTH_CHECK_FALLO"
         )
+
+class IdempotenciaCacheEncontrada(ProblemaGenerico):
+    def __init__(self, status_code:int, body:Any):
+        super().__init__(
+            title = "Idempotencia Encontrada",
+            status_code = status_code,
+            detail = "La solicitud ya fue procesada previamente y se devolvio una respuesta cacheada.",
+            code = "IDEMPOTENCIA_ENCONTRADA"
+        )
+        self.body = body

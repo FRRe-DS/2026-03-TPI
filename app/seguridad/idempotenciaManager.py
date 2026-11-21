@@ -1,9 +1,9 @@
 import hashlib
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
-from ..db.cache_config import cache
-from ..modelos.cache_models import RegistroIdempotencia
-from ..errores.exceptionsSemanticos import HashBodyDiferente, FaltaHeaderIdempotencia
+from app.db.cache_config import cache
+from app.modelos.cache_models import RegistroIdempotencia
+from app.errores.exceptionsSemanticos import HashBodyDiferente, FaltaHeaderIdempotencia, IdempotenciaCacheEncontrada
 #se supone que para cada "consulta" la idempotency_key es unica, como solo existe una por body, que cambie el 
 #body no tiene sentido
 
@@ -23,12 +23,10 @@ async def verificar_idempotencia(request: Request, response: Response):
         # Deserializar usando nuestro BaseModel de Pydantic
         campo = RegistroIdempotencia.model_validate_json(coincidencia_json) 
         # Validar integridad: misma llave pero datos distintos -> Error 409 Conflict
-        if coincidencia.body_hash != body_hash:
+        if campo.body_hash != body_hash:
             raise HashBodyDiferente() 
         # Si todo coincide perfectamente, devolvemos la respuesta cacheada (Cumple con el 200 OK del YAML)
-        return JSONResponse(
-            status_code=campo.status_code,
-            content=campo.body
-        )
+        raise IdempotenciaCacheEncontrada(status_code=campo.status_code, body=campo.body)
     #Si la llave NO existe, cedemos el control para que se ejecute el endpoint de negocio
-    yield idempotency_key
+    return idempotency_key
+#se guarda luego de resolver el endpoint, antes de finalizarlo OJO, tambien debe usarse el mismo calculo HASH

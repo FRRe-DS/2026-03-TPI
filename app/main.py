@@ -16,6 +16,7 @@ from errores.handlerManager import registrar_manejadores_excepciones
 from app.servicios.cadenaDeProveedores import AdaptadorEncadenado
 from app.servicios.calculosDeEstimacion import CalculosDeViaje
 from app.servicios.manejarReserva import RegistrarReserva
+from app.servicios.actualizarUbicacion import ActualizarUbicacionService
 from app.seguridad.idempotenciaManager import verificar_idempotencia
 from .errores.exceptionsSemanticos import ErrorHealthCheck
 from .db.cache_config import cache

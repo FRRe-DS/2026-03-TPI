@@ -64,7 +64,19 @@ class CacheResTemp(HashModel):#usa ttl
             database = cache
 
 class RegistroIdempotencia(BaseModel):
-    status: int = Field(...,ge=200, le=599,description="codigo error http") 
+    status_code: int = Field(...,ge=200, le=599,description="codigo error http") 
     body: Dict[str, Any] = Field(...,description="body json que debe resguardar/retornar")
     body_hash: str = Field(...,description="codigo hash unico para cada body")
+    
+    """" 
+        resultado.model_dump(mode="json") hay que guardar asi en la cache 
+        
+        ejemplo:
+        registro = RegistroIdempotencia(
+        status_code=status_code_final,
+        body=resultado.model_dump(mode="json"),
+        body_hash=body_hash)
+    
+    """
+
 

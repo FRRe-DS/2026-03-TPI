@@ -8,7 +8,7 @@ class AdaptadorEncadenado:
     Permite encadenar múltiples proveedores de geocodificación y buscar en ellos secuencialmente. segun preferencia.
     """
 
-    def __init__(self, body:ConsultaGeocodificacion):
+    def __init__(self):
         #Inicializa el adaptador encadenado con una lista de proveedores.
         #El orden de llamado es el mismo orden de la lista.
         self.proveedorLocal=Dicc_geocodif()
