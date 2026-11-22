@@ -9,7 +9,7 @@ Y codigo autoejecutable segun decoradores, los cuales responden a los endpoints 
 """
 from app.db.database_config import engine, Base #se importan para crear las tablas en la base de datos, y para poder realizar consultas a la bd
 from app.modelos import db_models #se importa models para que se ejecute el codigo de models.py y se creen las tablas en la base de datos
-from fastapi import FastAPI, Request, APIRouter, HTTPException, Depends, status
+from fastapi import FastAPI, Request, APIRouter, HTTPException, Depends, status, Query
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 import logging,uuid,re
@@ -25,6 +25,9 @@ from app.servicios.actEstadoOperativo import ServicioEstadoOperativo
 from app.errores.exceptionsSemanticos import ErrorHealthCheck
 from app.db.cache_config import cache
 from fastapi import Response
+from typing import Optional
+from app.servicios.geocodificacion import obtener_coordenadas
+from app.servicios.calculosDeEstimacion import CalculosDeViaje
 
 Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya existia, no hace nada. 
 #Esto es para inicializar la base de datos y crear las tablas que se definan en models.py que hereden de Base.
@@ -32,16 +35,15 @@ Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya exi
 REQUEST_ID_PATTERN = re.compile(r'^[A-Za-z0-9._-]{1,128}$')
 # Configuración básica para que los mensajes salgan en tu terminal (consola)
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
 logger = logging.getLogger("m4_backend")
 
 # Instanciamos la aplicación principal de FastAPI
 app = FastAPI(
     title="M4 - Ubicación y Disponibilidad",
     description="API encargada del rastreo de entidades",
-    version="1.0.0"
-)
+    version="1.0.0")
 #vinculamos los handlers de errores y excepciones personalizados
 registrar_manejadores_excepciones(app)
 
@@ -94,16 +96,20 @@ def RealizarGeocodificacion(datos:ConsultaGeocodificacion):
     resultado = adaptadorJerarquico.resolver(datos)
     return resultado
 
-@ruta3.get("estimacionruta",response_model=ResultadoEstimacionRuta,status_code=200,description="")
-async def RealizarCalculosEstimados(request:Request):
-    #se pasa los headers o mejor dicho los params_query a un diccionario y comprobarlo con pydantic
-    #pydantic tiene metodos asociados para comprobar la variable, investigarlo
-    datos=["los datos del query parameters del request"]
-    resultado=CalculosDeViaje(datos)
-    return resultado
+@ruta3.get("rutas/estimacion",response_model=ResultadoEstimacionRuta,status_code=status.HTTP_200_OK,
+    summary="Estimar distancia y tiempo entre origen y destino",)
+def RealizarCalculosEstimados(origen_latitud: float = Query(..., ge=-90.0, le=90.0),
+    origen_longitud: float = Query(..., ge=-180.0, le=180.0),
+    destino_latitud: float = Query(..., ge=-90.0, le=90.0),
+    destino_longitud: float = Query(..., ge=-180.0, le=180.0),
+    tipo_vehiculo: Optional[VehiculosSoportados] = Query(default=VehiculosSoportados.AUTO),):
 
-#posiblemente deberia colocar dentro del decorador del endpoint el Depends(verificar_rol("disponibilidad-be")) 
-#para que se ejecute la verificacion de rol y si no cumple con el rol requerido, se lanza un error y ni entra en el endpoint
+    respuesta = ConsultaEstimacionRuta(origen_latitud=origen_latitud,origen_longitud=origen_longitud,
+        destino_latitud=destino_latitud,destino_longitud=destino_longitud,tipo_vehiculo=tipo_vehiculo,)
+    return CalculosDeViaje(respuesta)
+
+#TODO:posiblemente deberia colocar dentro del decorador del endpoint el Depends(verificar_rol("disponibilidad-be")) 
+#TODO:para que se ejecute la verificacion de rol y si no cumple con el rol requerido, se lanza un error y ni entra en el endpoint
 @ruta4.post("conductores/{conductor_id}/reserva",response_model=SolicitudReserva,status_code=201,
             description="La reserva temporal se creó para esta solicitud.",)
 async def RealizarReserva(datos:SolicitudReserva,idempotency_key: str = Depends(verificar_idempotencia)):
@@ -159,25 +165,6 @@ def consultar_readiness():
             detail="El motor de caché Redis no responde a las solicitudes de ping.")
 
     return {"status": "READY"}
-
-
-class EventoDePrueba(BaseModel):
-    evento_id: UUID
-    lat: float = Field(..., ge=-90, le=90)
-    lon: float = Field(..., ge=-180, le=180)
-    ubicacion_texto: str | None = None
-
-
-@app.post("/PruebaM4/Piloto", tags=["Pruebas"])
-def procesar_evento_piloto(datos: EventoDePrueba):
-    if not (-28.5 <= datos.lat <= -27.2 and -59.5 <= datos.lon <= -58.7):
-        raise HTTPException(status_code=400, detail="Ubicación fuera de la zona de cobertura")
-    return {
-        "estado": "PROCESADO_EXITOSAMENTE",
-        "evento_id": datos.evento_id,
-        "detalles_externos": {"modulo_origen_id": datos.evento_id},
-    }
-
 
 for router in (ruta1, ruta2, ruta3, ruta4, ruta5):
     app.include_router(router)
