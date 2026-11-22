@@ -21,6 +21,7 @@ from app.servicios.manejarReserva import RegistrarReserva
 from app.servicios.actualizarUbicacion import ActualizarUbicacionService
 from app.servicios.candidatosCercanos import CandidatosCercanos
 from app.seguridad.idempotenciaManager import verificar_idempotencia
+from app.servicios.actEstadoOperativo import ServicioEstadoOperativo
 from app.errores.exceptionsSemanticos import ErrorHealthCheck
 from app.db.cache_config import cache
 from fastapi import Response
@@ -55,9 +56,7 @@ async def agregar_o_respetar_request_id(request: Request, call_next):
     #Lo guardamos en request.state para que handlerManage.py lo use como trace_id
     request.state.request_id = xrequest_id
     #Mostramos en la terminal (logs) la petición junto con su ID de rastreo (alineado con RNF-14)
-    logger.info(
-        f"Endpoint: {request.method} {request.url.path} | X-Request-ID: {xrequest_id}"
-    )
+    logger.info(f"Endpoint: {request.method} {request.url.path} | X-Request-ID: {xrequest_id}")
     #Dejamos que la petición continúe su camino hacia los endpoints
     response = await call_next(request)
     #Inyectamos obligatoriamente el X-Request-ID en las cabeceras de la respuesta (éxito o error)[cite: 1]
@@ -90,10 +89,7 @@ def endpoint_actualizar_ubicacion(
     # Delegamos la lógica al servicio
     resultado, es_nuevo = ActualizarUbicacionService.procesar(conductor_id, datos)
     # Definimos el código de éxito según corresponda al contrato
-    if es_nuevo:
-        response.status_code = status.HTTP_201_CREATED
-    else:
-        response.status_code = status.HTTP_200_OK
+    response.status_code = status.HTTP_201_CREATED if es_nuevo else status.HTTP_200_OK
     return resultado
 
 @ruta2.post("geocodificaciones",response_model=ResultadoGeocodificacion,status_code=200,
@@ -121,6 +117,13 @@ async def RealizarReserva(datos:SolicitudReserva,idempotency_key: str = Depends(
 @ruta4.post("conductores/cercanos",response_model=ResultadoBusquedaConductores,status_code=200)
 def BuscarConductoresCercanos(query: QueryCercanos):
     resultado = CandidatosCercanos.buscar(query)
+    return resultado
+
+@ruta4.put("conductores/{conductor_id}/estado",response_model=EstadoOperativoRegistrado)
+def actualizarEstadoOperativo(request: Request,response: Response,conductor_id: UUID,body: EstadoOperativo):
+    resultado, es_nuevo = ServicioEstadoOperativo.actualizar_estado(conductor_id=conductor_id,body=body,
+                                                                    trace_id=request.state.request_id,)
+    response.status_code = status.HTTP_201_CREATED if es_nuevo else status.HTTP_200_OK
     return resultado
 
 @ruta5.get("live", status_code=200)

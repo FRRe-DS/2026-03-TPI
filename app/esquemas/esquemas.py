@@ -6,7 +6,7 @@ para luego realizar contratos en rest o openAPI tengo entendido.
 ================================================
 
 '''
-from pydantic import BaseModel, Field, field_validator #importantes para decirle a fastapi que debe validar y restrigir a quienes las usan
+from pydantic import BaseModel, Field, field_validator, ConfigDict #importantes para decirle a fastapi que debe validar y restrigir a quienes las usan
 from typing import List,Optional # para determinar si es opcional el contenido de un campo, es decir puede ser null o none
 from uuid import UUID
 from datetime import datetime
@@ -102,6 +102,7 @@ class SolicitudReserva(BaseModel):
     reserva_id: UUID = Field(..., description="ID temporal de la reserva simulada")
     conductor_id: UUID = Field(..., description="ID del conductor reservado")
     estado: EstadoTmp = Field(default=EstadoTmp.RESERVADO, description="Estado de la reserva")
+
 class QueryCercanos(BaseModel):
     origen_latitud: float = Field(...,ge=-90,le=90)
     origen_longitud: float = Field(...,ge=-180,le=180)
@@ -120,7 +121,22 @@ class ResultadoBusquedaConductores(BaseModel):
     radio_aplicado_km: float = Field(...,ge=0, description="radio de busqueda aplicado en kilometros")
     generado_en: datetime = Field(...,description="timestamp de generacion del resultado en formato ISO 8601")
     
+class EstadoOperativo(BaseModel):
+    model_config = ConfigDict(extra="forbid") #debido a que el contrato las propiedades adicionales es false
+    conductor_id: UUID = Field(..., description="Identificador único del conductor")
+    event_id: Optional[str] = Field(default=None, description="ID del evento asociado (opcional)")
+    connected: bool = Field(..., description="Indica si el conductor desea estar conectado a la app")
+    available: bool = Field(..., description="Indica si el conductor desea recibir solicitudes")
+    timestamp_evento: Optional[datetime] = Field(default=None, description="Timestamp del evento en formato ISO 8601")
 
+class EstadoOperativoRegistrado(BaseModel):
+    model_config = ConfigDict(extra="forbid") #debido a que el contrato las propiedades adicionales es false
+    conductor_id: UUID = Field(..., description="Identificador único del conductor")
+    event_id: Optional[str] = Field(default=None, description="ID del evento asociado (opcional)")
+    connected: bool = Field(..., description="Indica si el conductor desea estar conectado a la app")
+    available: bool = Field(..., description="Indica si el conductor desea recibir solicitudes")
+    actualizado_en: Optional[datetime] = Field(default=None, description="Timestamp del evento aplicado, si M3 lo envió; en caso contrario, puede omitirse.")
+    recibido_en: datetime = Field(..., description="Timestamp en que M4 recibió el evento de intención de M3 en formato ISO 8601")
 
 #se usara fieldvalidator para validar entradas por pydantic y que salte antes de entrar a codigo una exepcion de error
 #especifica

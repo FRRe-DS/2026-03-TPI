@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field, field_validator
 from redis_om import HashModel
 from uuid import UUID
@@ -53,12 +53,11 @@ class UbicacionesCond(HashModel):#usa ttl
         database = cache
 
 class CacheEstOp(HashModel):
-    conductor_id: UUID = Field(...,index=True)
-    event_id: None = Field(description="a confirmar con m3")
+    conductor_id: UUID = Field(...,primary_key=True)
+    event_id: Optional[str] = Field(default=None, index=True,description="a confirmar con m3")
     connected:bool = Field(...,description="si es true el conductor desea esta conectado a la app")
     available:bool = Field(...,description="si es true el conductor desea recibir solicitudes")
-    actualizado_en: datetime = Field()
-    recibido_en: datetime = Field(...,description="util para determinar cuando dejamos de recibir act")
+    timestamp_evento: Optional[datetime] = Field(default=None, description="Opcional hasta confirmación de M3. Si se informa, instante UTC de la intención que M4 usa para detectar eventos fuera de orden.")
     class Meta:
             database = cache
 
