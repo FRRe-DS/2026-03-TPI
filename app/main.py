@@ -109,8 +109,11 @@ async def RealizarReserva(datos:SolicitudReserva,idempotency_key: str = Depends(
     resultado=RegistrarReserva()
     return resultado
 
-@ruta4.post("conductores/cercanos",response_model=ResultadoBusquedaConductores,status_code=200)
-def BuscarConductoresCercanos(query: QueryCercanos):
+@ruta4.get("conductores/cercanos", response_model=ResultadoBusquedaConductores, status_code=200,
+           description="Búsqueda realizada; conductores puede ser lista vacía si no hay candidatos en ningún radio.")
+def BuscarConductoresCercanos(query: QueryCercanos = Depends(), response: Response = None):
+    # Contrato exige Cache-Control: no-store (respuesta contiene coordenadas/ubicación)
+    response.headers["Cache-Control"] = "no-store"
     resultado = CandidatosCercanos.buscar(query)
     return resultado
 
