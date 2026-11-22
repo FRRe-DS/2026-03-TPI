@@ -9,7 +9,7 @@ Y codigo autoejecutable segun decoradores, los cuales responden a los endpoints 
 """
 from app.db.database_config import engine, Base #se importan para crear las tablas en la base de datos, y para poder realizar consultas a la bd
 from app.modelos import db_models #se importa models para que se ejecute el codigo de models.py y se creen las tablas en la base de datos
-from fastapi import FastAPI, Request, APIRouter, Depends, status, Query, Response
+from fastapi import FastAPI, Request, APIRouter, Depends, status, Response
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 import logging,uuid,re
