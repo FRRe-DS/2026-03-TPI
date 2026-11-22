@@ -81,13 +81,9 @@ adaptadorJerarquico = AdaptadorEncadenado()
 #para que se ejecute la verificacion de rol y si no cumple con el rol requerido, se lanza un error 403
 
 @ruta1.put("conductores/{conductor_id}/ubicacion",response_model=UbicacionRegistrada)
-def endpoint_actualizar_ubicacion(
-    conductor_id: UUID,                     # <--- Viene mágicamente de la URL y se valida como UUID
-    datos: ActualizarUbicacion,             # <--- Viene del Body de la petición validado por Pydantic
-    response: Response                      # <--- Objeto inyectado para manejar el código HTTP dinámico si hace falta
-):
+def endpoint_actualizar_ubicacion(conductor_id: UUID,datos: ActualizarUbicacion,response: Response,request: Request):
     # Delegamos la lógica al servicio
-    resultado, es_nuevo = ActualizarUbicacionService.procesar(conductor_id, datos)
+    resultado, es_nuevo = ActualizarUbicacionService.procesar(conductor_id, datos, trace_id=request.state.request_id,)
     # Definimos el código de éxito según corresponda al contrato
     response.status_code = status.HTTP_201_CREATED if es_nuevo else status.HTTP_200_OK
     return resultado
