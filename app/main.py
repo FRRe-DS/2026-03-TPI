@@ -7,6 +7,7 @@ Asi como la inyeccion de dependencias para la base de datos.
 Y codigo autoejecutable segun decoradores, los cuales responden a los endpoints de la API.
 ============================================================
 """
+<<<<<<< HEAD
 from app.db.database_config import engine, Base #se importan para crear las tablas en la base de datos, y para poder realizar consultas a la bd
 from app.modelos import db_models #se importa models para que se ejecute el codigo de models.py y se creen las tablas en la base de datos
 from fastapi import FastAPI, Request, APIRouter, HTTPException, Depends, status
@@ -28,6 +29,21 @@ from fastapi import Response
 
 Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya existia, no hace nada. 
 #Esto es para inicializar la base de datos y crear las tablas que se definan en models.py que hereden de Base.
+=======
+from fastapi import FastAPI, Request, APIRouter, Query, status
+import logging,uuid,re
+from typing import Optional
+from app.esquemas.esquemas import (
+    ConsultaGeocodificacion,
+    ResultadoGeocodificacion,
+    ConsultaEstimacionRuta,
+    ResultadoEstimacionRuta,
+    VehiculosSoportados,
+)
+from app.errores.handlerManager import registrar_manejadores_excepciones
+from app.servicios.geocodificacion import obtener_coordenadas
+from app.servicios.calculosDeEstimacion import CalculosDeViaje
+>>>>>>> origin/feat-estimacion
 
 REQUEST_ID_PATTERN = re.compile(r'^[A-Za-z0-9._-]{1,128}$')
 # Configuración básica para que los mensajes salgan en tu terminal (consola)
@@ -45,6 +61,7 @@ app = FastAPI(
 #vinculamos los handlers de errores y excepciones personalizados
 registrar_manejadores_excepciones(app)
 
+<<<<<<< HEAD
 #usamos el middleware para lograr respetar el string necesario en el head que documenta el contrato
 @app.middleware("http")
 async def agregar_o_respetar_request_id(request: Request, call_next):
@@ -70,6 +87,9 @@ el codigo, si algo saliera mal no haria falta buscar tanto codigo o como premisa
 cumplir su responsabilidad asociada.
 
 '''
+=======
+
+>>>>>>> origin/feat-estimacion
 ruta1 = APIRouter(prefix="/api/v1/",tags=["Ubicaciones"])
 ruta2 = APIRouter(prefix="/api/v1/",tags=["Geocodificacion"])
 ruta3 = APIRouter(prefix="/api/v1/",tags=["Rutas"])
@@ -77,6 +97,7 @@ ruta4 = APIRouter(prefix="/api/v1/",tags=["Disponibilidad"])
 ruta5 = APIRouter(prefix="/health/",tags=["Salud"])
 adaptadorJerarquico = AdaptadorEncadenado()
 
+<<<<<<< HEAD
 #en cada endpoint se colocaria dependencies=[Depends(verificar_rol("ubicacion-be"))], antes del reesponse_model
 #para que se ejecute la verificacion de rol y si no cumple con el rol requerido, se lanza un error 403
 
@@ -181,3 +202,23 @@ def procesar_evento_piloto(datos: EventoDePrueba):
 
 for router in (ruta1, ruta2, ruta3, ruta4, ruta5):
     app.include_router(router)
+=======
+
+@ruta3.get("rutas/estimacion",response_model=ResultadoEstimacionRuta,status_code=status.HTTP_200_OK,
+    summary="Estimar distancia y tiempo entre origen y destino",)
+def RealizarCalculosEstimados(origen_latitud: float = Query(..., ge=-90.0, le=90.0),
+    origen_longitud: float = Query(..., ge=-180.0, le=180.0),
+    destino_latitud: float = Query(..., ge=-90.0, le=90.0),
+    destino_longitud: float = Query(..., ge=-180.0, le=180.0),
+    tipo_vehiculo: Optional[VehiculosSoportados] = Query(default=VehiculosSoportados.AUTO),):
+
+    respuesta = ConsultaEstimacionRuta(origen_latitud=origen_latitud,origen_longitud=origen_longitud,
+        destino_latitud=destino_latitud,destino_longitud=destino_longitud,tipo_vehiculo=tipo_vehiculo,)
+    return CalculosDeViaje(respuesta)
+
+for router in (ruta1, ruta2, ruta3, ruta4, ruta5):
+    app.include_router(router)
+
+
+#
+>>>>>>> origin/feat-estimacion

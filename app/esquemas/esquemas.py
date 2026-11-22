@@ -24,8 +24,8 @@ class Coordenada(BaseModel):
     longitud: float = Field(..., ge=-180.0, le=180.0, description="Longitud en grados decimales")
 
 class FuenteInfo(str,Enum):
-    MAPA="MAPA"
-    ESTIMACION_LOCAL="ESTIMACION LOCAL"
+    PROVEEDOR_MAPA="proveedor_mapa"
+    ESTIMACION_LOCAL="estimacion_local"
 
 class VehiculosSoportados(str,Enum):
     AUTO="AUTO"
@@ -84,19 +84,19 @@ class ResultadoGeocodificacion(BaseModel):
     coincidencias:List[CoincidenciasGeolocalizacion] = Field(description="puede devolver vacio")
 
 class ConsultaEstimacionRuta(BaseModel):
-    origen_latitud: float = Field(...,ge=-90,le=90,)
-    origen_longitud: float = Field(...,ge=-180,le=180)
-    destino_latitud: float = Field(...,ge=-90,le=90)
-    destino_longitud: float = Field(...,ge=-180,le=180)
-    tipo_vehiculo: VehiculosSoportados = Field(description="solo n posibles datos en mayusculas definidas en la enumeracion")
+    origen_latitud: float = Field(..., ge=-90.0, le=90.0)
+    origen_longitud: float = Field(..., ge=-180.0, le=180.0)
+    destino_latitud: float = Field(..., ge=-90.0, le=90.0)
+    destino_longitud: float = Field(..., ge=-180.0, le=180.0)
+    tipo_vehiculo: Optional[VehiculosSoportados] = Field(default=VehiculosSoportados.AUTO)
+    
 
 class ResultadoEstimacionRuta(BaseModel):
-    origen:Coordenada = Field(...,description="coordenadas lat y lon del origen")
-    destino:Coordenada = Field(...,description="coordenadas lat y lon del destino")
-    distancia_estimada_km: float = Field(...,description="distancia entre conductor y cliente")
-    eta_minutos:int = Field(...,description="tiempo entre conductor cliente")
-    calculado_en:datetime = Field(...,description="tiempo en que fue enviado/calculado")
-    fuente:FuenteInfo = Field(...,description="fuente de la informacion")
+    distancia_estimada_km: float = Field(..., ge=0, description="Distancia estimada de ruta en km")
+    eta_minutos: int = Field(..., ge=0, description="Tiempo estimado en minutos")
+    calculado_en: datetime = Field(..., description="Timestamp UTC del momento del cálculo")
+    fuente: FuenteInfo = Field(..., description="proveedor_mapa o estimacion_local")
+
 
 class SolicitudReserva(BaseModel):
     reserva_id: UUID = Field(..., description="ID temporal de la reserva simulada")
@@ -137,14 +137,4 @@ class EstadoOperativoRegistrado(BaseModel):
     available: bool = Field(..., description="Indica si el conductor desea recibir solicitudes")
     actualizado_en: Optional[datetime] = Field(default=None, description="Timestamp del evento aplicado, si M3 lo envió; en caso contrario, puede omitirse.")
     recibido_en: datetime = Field(..., description="Timestamp en que M4 recibió el evento de intención de M3 en formato ISO 8601")
-
-#se usara fieldvalidator para validar entradas por pydantic y que salte antes de entrar a codigo una exepcion de error
-#especifica
-#ojo con los string se debe verificar que no es un espacio en blanco " ", asi que se debe validar con la funcion
-#anterior para rechazar ese tipo de strings y levantar excepcion asociada.
-"""
-422: Falló la estructura o los tipos de datos (Sintaxis / Pydantic).
-
-400: La estructura era correcta, pero el contenido rompió una regla de negocio (Dominio / Tus excepciones).
-"""
 
