@@ -24,8 +24,8 @@ class Coordenada(BaseModel):
     longitud: float = Field(..., ge=-180.0, le=180.0, description="Longitud en grados decimales")
 
 class FuenteInfo(str,Enum):
-    PROVEEDOR_MAPA="proveedor_mapa"
-    ESTIMACION_LOCAL="estimacion_local"
+    PROVEEDOR_MAPA="PROVEEDOR_MAPA"
+    ESTIMACION_LOCAL="ESTIMACION_LOCAL"
 
 class VehiculosSoportados(str,Enum):
     AUTO="AUTO"
@@ -83,7 +83,7 @@ class CoincidenciasGeolocalizacion(BaseModel):
 class ResultadoGeocodificacion(BaseModel):
     coincidencias:List[CoincidenciasGeolocalizacion] = Field(description="puede devolver vacio")
 
-class ConsultaEstimacionRuta(BaseModel):
+class QueryEstimacionRuta(BaseModel):
     origen_latitud: float = Field(..., ge=-90.0, le=90.0)
     origen_longitud: float = Field(..., ge=-180.0, le=180.0)
     destino_latitud: float = Field(..., ge=-90.0, le=90.0)
@@ -93,7 +93,7 @@ class ConsultaEstimacionRuta(BaseModel):
 
 class ResultadoEstimacionRuta(BaseModel):
     distancia_estimada_km: float = Field(..., gt=0, description="Distancia estimada de ruta en km")
-    eta_minutos: int = Field(..., ge=0, description="Tiempo estimado en minutos")
+    eta_minutos: int = Field(..., gt=0, description="Tiempo estimado en minutos")
     calculado_en: datetime = Field(..., description="Timestamp UTC del momento del cálculo")
     fuente: FuenteInfo = Field(..., description="proveedor_mapa o estimacion_local")
 

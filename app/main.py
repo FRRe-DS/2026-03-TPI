@@ -9,7 +9,7 @@ Y codigo autoejecutable segun decoradores, los cuales responden a los endpoints 
 """
 from app.db.database_config import engine, Base #se importan para crear las tablas en la base de datos, y para poder realizar consultas a la bd
 from app.modelos import db_models #se importa models para que se ejecute el codigo de models.py y se creen las tablas en la base de datos
-from fastapi import FastAPI, Request, APIRouter, HTTPException, Depends, status, Query
+from fastapi import FastAPI, Request, APIRouter, Depends, status, Query, Response
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 import logging,uuid,re
@@ -24,9 +24,6 @@ from app.seguridad.idempotenciaManager import verificar_idempotencia
 from app.servicios.actEstadoOperativo import ServicioEstadoOperativo
 from app.errores.exceptionsSemanticos import ErrorHealthCheck
 from app.db.cache_config import cache
-from fastapi import Response
-from typing import Optional
-from app.servicios.geocodificacion import obtener_coordenadas
 from app.servicios.calculosDeEstimacion import CalculosDeViaje
 
 Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya existia, no hace nada. 
@@ -96,15 +93,11 @@ def RealizarGeocodificacion(datos:ConsultaGeocodificacion):
     resultado = adaptadorJerarquico.resolver(datos)
     return resultado
 
-@ruta3.get("rutas/estimacion",response_model=ResultadoEstimacionRuta,status_code=status.HTTP_200_OK,
-    summary="Estimar distancia y tiempo entre origen y destino",)
-def RealizarCalculosEstimados(origen_latitud: float = Query(..., ge=-90.0, le=90.0),
-    origen_longitud: float = Query(..., ge=-180.0, le=180.0),
-    destino_latitud: float = Query(..., ge=-90.0, le=90.0),
-    destino_longitud: float = Query(..., ge=-180.0, le=180.0),
-    tipo_vehiculo: Optional[VehiculosSoportados] = Query(default=VehiculosSoportados.AUTO),):
-
-    respuesta = ConsultaEstimacionRuta(origen_latitud=origen_latitud,origen_longitud=origen_longitud,
+#TODO: adaptarlo para soportar registro de logs de trazabilidad
+@ruta3.get("rutas/estimacion",response_model=ResultadoEstimacionRuta,status_code=status.HTTP_200_OK,summary="Estimar distancia y tiempo entre origen y destino",)
+def RealizarCalculosEstimados(origen_latitud: float,origen_longitud: float,destino_latitud: float,destino_longitud: float,
+    tipo_vehiculo: VehiculosSoportados,):
+    respuesta = QueryEstimacionRuta(origen_latitud=origen_latitud,origen_longitud=origen_longitud,
         destino_latitud=destino_latitud,destino_longitud=destino_longitud,tipo_vehiculo=tipo_vehiculo,)
     return CalculosDeViaje(respuesta)
 
