@@ -11,11 +11,11 @@ se debe invocar mediante
 lat,long = obtener_coordenadas(direccion)
 
 '''
-
+#TODO: falta diferenciar el 503 del 504, dependencia no disponible de tiempo agotado
 from geopy.exc import GeocoderTimedOut, GeopyError
 from geopy.geocoders import Nominatim
 import logging, threading, time
-from app.errores.exceptionsSemanticos import DependenciaNoDisponible
+from app.errores.exceptionsSemanticos import DependenciaNoDisponible,TiempoAgotado
 from app.esquemas.esquemas import ConsultaGeocodificacion
 from app.servicios.adaptador import GeoProveedor
 
@@ -81,7 +81,14 @@ class ProovedorGeoRef_Geopy(GeoProveedor):
                 self.logger.info("[trace_id=%s]|Busqueda Geopy tuvo resultados.|Cant Result = %d",trace_id,len(geocoincidencias))
                 return {"coincidencias": geocoincidencias}
             # Actualizamos el timestamp igual para no reintentar instantáneamente si falló
-            except (GeocoderTimedOut, GeopyError) as e:
+            except GeocoderTimedOut as e:
                 self._ultimo_tiempo_consulta = time.time()
-                self.logger.exception("[trace_id=%s]|Geopy no disponible|Tipo: %s|Detalle: %s",trace_id,type(e).__name__,e)
-                raise DependenciaNoDisponible() from e# 503
+                self.logger.warning("[trace_id=%s]|Timeout en Geopy|Tipo: %s|Detalle: %s",
+                    trace_id,type(e).__name__,e,)
+                raise TiempoAgotado(detail="Geopy tardo demaciado en responder") from e  # 504
+            except GeopyError as e:
+                self._ultimo_tiempo_consulta = time.time()
+                self.logger.exception("[trace_id=%s]|Geopy no disponible (503)|Tipo: %s|Detalle: %s",
+                    trace_id,type(e).__name__,e,)
+                raise DependenciaNoDisponible(retry_after=1) from e  # 503
+            

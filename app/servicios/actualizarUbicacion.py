@@ -26,7 +26,7 @@ class ActualizarUbicacionService:
             ubicacion_existente = None
         except Exception as exc:
             logger.exception("[trace_id=%s]|Error al acceder a Redis para conductor conductor_id: %s",trace_id, conductor_id,)
-            raise DependenciaNoDisponible(detail="Error al acceder a la base de datos de caché.") from exc
+            raise DependenciaNoDisponible(detail="Error al acceder a los datos de caché.",retry_after=1) from exc
 
         if ubicacion_existente:
             # --- FLUJO DE ACTUALIZACIÓN ---
@@ -50,7 +50,7 @@ class ActualizarUbicacionService:
                 ubicacion_existente.expire(30)
             except Exception as exc:
                 logger.exception("[trace_id=%s]|Error al intentar actualizar el registro en la redis.|conductor id:%s",trace_id,conductor_id,)
-                raise DependenciaNoDisponible() from exc
+                raise DependenciaNoDisponible(detail="Error al intentar operaracion",retry_after=1) from exc
             # Calculamos la expiración (ahora + 30 segundos) alineado al TTL de Redis
             tiempo_actual_utc = datetime.now(timezone.utc)
             expiracion_calculada = tiempo_actual_utc + timedelta(seconds=30)
@@ -78,7 +78,7 @@ class ActualizarUbicacionService:
                 nueva_ubicacion.expire(30)
             except Exception as exc:
                 logger.exception("[trace_id=%s]|Error al intentar registrar en la redis.|conductor id:%s ",trace_id,conductor_id,)
-                raise DependenciaNoDisponible() from exc
+                raise DependenciaNoDisponible(detail="Error al intentar operaracion",retry_after=1) from exc
             
             tiempo_actual_utc = datetime.now(timezone.utc)
             expiracion_calculada = tiempo_actual_utc + timedelta(seconds=30)

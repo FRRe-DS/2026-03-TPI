@@ -1,3 +1,4 @@
+#TODO: tiempo agotado,504 respectivamente, tiene que ver con el consumo de M3 asi que de momento no se coloca
 from datetime import datetime, timezone
 from typing import List
 from uuid import UUID
@@ -31,9 +32,8 @@ class CandidatosCercanos:
         except Exception as e:
             # Redis no disponible → 503, no silenciar el fallo devolviendo lista vacía
             logger.exception("[trace_id=%s]|Error al intentar acceder a la redis|Tipo = %s|Detalle = %s",trace_id,type(e).__name__,e)
-            raise DependenciaNoDisponible(
-                detail="No se pudo acceder al almacén de ubicaciones (Redis). Intente nuevamente en unos instantes."
-            ) from e
+            raise DependenciaNoDisponible(detail="No se pudo acceder al almacén de ubicaciones (Redis). Intente nuevamente en unos instantes."
+            ,retry_after=1) from e
 
         candidatos_finales: List[Candidatos] = []
         # radio_aplicado por defecto al máximo (si no hay candidatos en ningún radio)
@@ -70,8 +70,7 @@ class CandidatosCercanos:
                 except (RedisConnectionError, RedisTimeoutError) as e:
                     logger.exception("[trace_id=%s]|Error de redis|Tipo= %s|Detalle= %s",trace_id,type(e).__name__,e)
                     raise DependenciaNoDisponible(
-                        detail="No se pudo acceder a el estado operativo del conductor (Redis no disponible)."
-                    ) from e
+                        detail="No se pudo acceder a el estado operativo del conductor (Redis no disponible).",retry_after=1) from e
                 except Exception as e:
                     logger.exception("[trace_id=%s]|Error de inesperado de datos|Tipo= %s|Detalle= %s",trace_id,type(e).__name__,e)
                     continue  # dato corrupto u otro error puntual → descartar este candidato
@@ -89,7 +88,7 @@ class CandidatosCercanos:
                         logger.debug("[trace_id=%s]|Estado temporal no existe|Conductor id =%s",trace_id,conductor_id)
                 except (RedisConnectionError, RedisTimeoutError) as e:
                     logger.exception("[trace_id=%s]|No se pudo acceder a registro de reservas|Tipo= %s|Detalle= %s",trace_id,type(e).__name__,e)
-                    raise DependenciaNoDisponible(detail="No se pudo acceder a el registro de reservas(Redis no disponible).") from e
+                    raise DependenciaNoDisponible(detail="No se pudo acceder a el registro de reservas(Redis no disponible).",retry_after=1) from e
                 #TODO: tiene ttl la tabla de reservas de la redis asi que este exeption estaria de mas, verificar
                 except Exception as e:
                     logger.exception("[trace_id=%s]|No se pudo acceder a registro de reservas|Tipo= %s|Detalle= %s",trace_id,type(e).__name__,e)

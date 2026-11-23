@@ -20,7 +20,7 @@ def CalculosDeViaje(datos: QueryEstimacionRuta,trace_id:str) -> ResultadoEstimac
         distancia_linea_recta_km = geodesic(origen, destino).kilometers
     except Exception as e:
         logger.exception("[trace_id=%s]|Error inesperado de dependencia.|Tipo: %s |Detalle: %s",trace_id,type(e).__name__,e)
-        raise DependenciaNoDisponible() from e
+        raise DependenciaNoDisponible(retry_after=1) from e
     
     distancia_estimada_km = round(distancia_linea_recta_km * FACTOR_RUTAS_URBANAS, 2)
     velocidad_kmh = (VELOCIDAD_MOTO_KMH if datos.tipo_vehiculo == VehiculosSoportados.MOTO else VELOCIDAD_AUTO_KMH)

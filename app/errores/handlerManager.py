@@ -22,7 +22,7 @@ def registrar_manejadores_excepciones(app: FastAPI):
             headers={"Content-Type": "application/problem+json"},
             content={
                 "type": "about:blank",
-                "title": "Solicitud Invalida",
+                "title": "No Procesable",
                 "status_code": 422,
                 "detail": "Los datos de entrada no cumplen con el formato requerido. ",
                 "instance": str(request.url.path),
@@ -47,13 +47,16 @@ def registrar_manejadores_excepciones(app: FastAPI):
             contenido["code"] = exc.code
         if exc.invalid_params is not None:
             contenido["invalid_params"] = exc.invalid_params
-        
-        
+        if exc.retry_after is not None:
+            contenido["retry_after"]=exc.retry_after
+            head={"Content-Type": "application/problem+json","Retry-After": str(exc.retry_after)}
+        else:
+            head={"Content-Type": "application/problem+json"}
+
         return JSONResponse(
                     status_code=exc.status_code,
-                    headers={"Content-Type": "application/problem+json"},
-                    content=contenido                    
-        )
+                    headers=head,
+                    content=contenido)
 
     @app.exception_handler(ProblemaDominio) #familia de errores del domino
     async def HandlerDominio(request:Request,exc:ProblemaDominio):
@@ -70,13 +73,17 @@ def registrar_manejadores_excepciones(app: FastAPI):
         if exc.code is not None:
             contenido["code"] = exc.code
         if exc.invalid_params is not None:
-                    contenido["invalid_params"] = exc.invalid_params
+            contenido["invalid_params"] = exc.invalid_params
+        if exc.retry_after is not None:
+            contenido["retry_after"]=exc.retry_after
+            head={"Content-Type": "application/problem+json","Retry-After": str(exc.retry_after)}
+        else:
+            head={"Content-Type": "application/problem+json"}
 
         return JSONResponse(
             status_code=exc.status_code,
-            headers={"Content-Type": "application/problem+json"},
-            content=contenido   
-        )
+            headers=head,
+            content=contenido)
 
     @app.exception_handler(Exception)  # Captura cualquier error no controlado en la app
     async def global_exception_handler(request: Request, exc: Exception):

@@ -28,7 +28,6 @@ class BalanceadorExternoGeocodif(GeoProveedor):
         logger.info("[trace_id=%s]|Delegando geocodificación externa|Proveedor=%s",trace_id,type(proveedor).__name__,)
         return proveedor.buscar(body)
 
-
 class AdaptadorEncadenado:
     """
     Clase que implementa un encadenamiento para la geocodificación.

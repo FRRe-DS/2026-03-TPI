@@ -1,11 +1,8 @@
 from typing import Any
-from fastapi import Request
-import logging
-logger = logging.getLogger(__name__)
 
 class ProblemaGenerico (Exception):
     def __init__(self, type: str = "about:blank", title: str = "", status_code: int = None, 
-                detail: str = "", instance: str = "", code: str = None, trace_id: str = None, invalid_params = None):
+                detail: str = "", instance: str = "", code: str = None, trace_id: str = None, invalid_params = None,retry_after:int|None=None):
         if not (400 <= status_code <= 599):
             raise ValueError(
                 f"El código de estado HTTP '{status_code}' es inválido para un problema. "
@@ -20,10 +17,11 @@ class ProblemaGenerico (Exception):
         self.code = code
         self.trace_id = trace_id
         self.invalid_params= invalid_params
+        self.retry_after=retry_after
         super().__init__(detail)
 
 class ProblemaDominio (Exception):
-    def __init__(self, type: str = "", title: str = "", status_code: int = None, detail: str = "", instance: str = "", code: str = None, trace_id: str = None, invalid_params = None):
+    def __init__(self, type: str = "", title: str = "", status_code: int = None, detail: str = "", instance: str = "", code: str = None, trace_id: str = None, invalid_params = None,retry_after:int|None=None):
         if not (400 <= status_code <= 599):
             raise ValueError(
                 f"El código de estado HTTP '{status_code}' es inválido para un problema. "
@@ -38,6 +36,7 @@ class ProblemaDominio (Exception):
         self.code = code
         self.trace_id = trace_id
         self.invalid_params= invalid_params
+        self.retry_after=retry_after
         super().__init__(detail)
 
 class NoAutenticado (ProblemaGenerico):
@@ -56,29 +55,33 @@ class SinPermiso (ProblemaGenerico):
             detail = detail,
             code = "SIN_PERMISO")
 
-class NoProcesable (ProblemaDominio):
-    # 422
-    pass
-
 class LimiteExcedido (ProblemaGenerico): #tiene retry after
-    # 429
-    pass
+    def __init__(self, detail:str="Se ha excedido en cantidad de consultas, intente en mas tarde.",retry_after:int|None=None):
+        super().__init__(
+            title = "Limite Excedido",
+            status_code = 429,
+            detail = detail,
+            retry_after=retry_after,
+            code = "LIMITE_EXCEDIDO")
 
-class ErrorInterno (ProblemaGenerico):
-    # 500
-    pass
+class TiempoAgotado (ProblemaDominio): #TODO: tiene retry after y se implementa cuando se "consume" algo
+    def __init__(self, detail:str="Se agoto el tiempo en espera de respuesta.",retry_after:int|None=None):
+        super().__init__(
+            type ="/errores/tiempoagotado/",
+            title = "Tiempo Agotado",
+            status_code = 504,
+            detail = detail,
+            retry_after=retry_after,
+            code = "TIEMPO_AGOTADO")
 
-class TiempoAgotado (ProblemaDominio):
-    # 504
-    pass
-
-class DependenciaNoDisponible(ProblemaDominio): #falta retry-after
-    def __init__(self, detail:str="La dependencia externa tardo demasiado en responder o no esta disponible"):
+class DependenciaNoDisponible(ProblemaDominio):
+    def __init__(self, detail:str="La dependencia externa no esta disponible",retry_after:int|None=None):
         super().__init__(
             type = "/errores/dependencianodisponible/",
             title = "Dependencia No Disponible",
             status_code = 503,
             detail = detail,
+            retry_after=retry_after,
             code = "GEOCODIFICACION_FRACASO")
 
 class FaltaHeaderIdempotencia(ProblemaGenerico):
@@ -101,7 +104,16 @@ class HashBodyDiferente(ProblemaDominio):
         )
 
 class ErrorTimeStamp(ProblemaGenerico):
-    def __init__(self, detail:str="Timestamp anterior a la ubicación vigente, o mismo timestamp con coordenadas distintas."):
+    def __init__(self, detail:str="Timestamp anterior a la ubicación vigente, o mismo timestamp con datos distintos/iguales."):
+        super().__init__(
+            title = "Conflicto",
+            status_code = 409,
+            detail = detail,
+            code = "CONFLICTO_TIMESTAMP")
+
+
+class ErrorEvento_id(ProblemaGenerico):
+    def __init__(self, detail:str="Evento duplicado para la operacion."):
         super().__init__(
             title = "Conflicto",
             status_code = 409,

@@ -26,6 +26,8 @@ from app.errores.exceptionsSemanticos import ErrorHealthCheck
 from app.db.cache_config import cache
 from app.servicios.calculosDeEstimacion import CalculosDeViaje
 from app.logs.logs_config import configurar_logging
+from app.seguridad.authManager import verificar_roles
+from app.seguridad.rate_limit_config import verificar_rate_limit
 
 configurar_logging()
 logger = logging.getLogger(__name__)
@@ -55,7 +57,6 @@ async def agregar_o_respetar_request_id(request: Request, call_next):
     #Lo guardamos en request.state para que handlerManage.py lo use como trace_id
     request.state.request_id = xrequest_id
     #Mostramos en la terminal (logs) la petición junto con su ID de rastreo (alineado con RNF-14)
-    #TODO: verificar si todos los endpoints deben aparecer en el logs caso contrario discriminar los url confidenciales
     logger.info("[trace_id=%s]|Peticion recibida|metodo=%s|ruta=%s",xrequest_id,request.method,request.url.path,)
     #Dejamos que la petición continúe su camino hacia los endpoints
     response = await call_next(request)
@@ -77,10 +78,9 @@ ruta4 = APIRouter(prefix="/api/v1/",tags=["Disponibilidad"])
 ruta5 = APIRouter(prefix="/health/",tags=["Salud"])
 adaptadorJerarquico = AdaptadorEncadenado()
 
-#en cada endpoint se colocaria dependencies=[Depends(verificar_rol("ubicacion-be"))], antes del reesponse_model
-#para que se ejecute la verificacion de rol y si no cumple con el rol requerido, se lanza un error 403
-
-@ruta1.put("conductores/{conductor_id}/ubicacion",response_model=UbicacionRegistrada)
+@ruta1.put("conductores/{conductor_id}/ubicacion",response_model=UbicacionRegistrada,
+            dependencies=[Depends(verificar_roles("conductores-be", "ubicacion-be")),
+            Depends(verificar_rate_limit("actualizar_ubicacion"))])
 def endpoint_actualizar_ubicacion(conductor_id: UUID,datos: ActualizarUbicacion,response: Response,request: Request):
     # Delegamos la lógica al servicio
     resultado, es_nuevo = ActualizarUbicacionService.procesar(conductor_id, datos, trace_id=request.state.request_id,)
@@ -88,8 +88,10 @@ def endpoint_actualizar_ubicacion(conductor_id: UUID,datos: ActualizarUbicacion,
     response.status_code = status.HTTP_201_CREATED if es_nuevo else status.HTTP_200_OK
     return resultado
 
-#TODO:en geocodificacion falta implementar retry-after y ocultar datos sensibles
-@ruta2.post("geocodificaciones",response_model=ResultadoGeocodificacion,status_code=200,
+@ruta2.post("geocodificaciones",response_model=ResultadoGeocodificacion,
+            dependencies=[Depends(verificar_roles("solicitud-be", "ubicacion-be")),
+            Depends(verificar_rate_limit("geocodificar"))],
+            status_code=200,
             description="Consulta realizada; coincidencias puede ser una lista vacía.")
 def RealizarGeocodificacion(datos:ConsultaGeocodificacion,request: Request,response:Response):
     response.headers["Cache-Control"] = "no-store"
@@ -97,7 +99,11 @@ def RealizarGeocodificacion(datos:ConsultaGeocodificacion,request: Request,respo
     resultado = adaptadorJerarquico.resolver(datos,trace_id=request.state.request_id,)
     return resultado
 
-@ruta3.get("rutas/estimacion",response_model=ResultadoEstimacionRuta,status_code=status.HTTP_200_OK,summary="Estimar distancia y tiempo entre origen y destino",)
+@ruta3.get("rutas/estimacion",response_model=ResultadoEstimacionRuta,
+            dependencies=[Depends(verificar_roles("solicitud-be", "tarifas-be", "reservas-be", "ubicacion-be")),
+            Depends(verificar_rate_limit("estimar_ruta"))],
+            status_code=status.HTTP_200_OK,
+            summary="Estimar distancia y tiempo entre origen y destino",)
 def RealizarCalculosEstimados(origen_latitud: float,origen_longitud: float,destino_latitud: float,destino_longitud: float,
     tipo_vehiculo: VehiculosSoportados,request:Request):
     query = QueryEstimacionRuta(origen_latitud=origen_latitud,
@@ -111,12 +117,17 @@ def RealizarCalculosEstimados(origen_latitud: float,origen_longitud: float,desti
 #TODO: falta implementar reserva
 #TODO:posiblemente deberia colocar dentro del decorador del endpoint el Depends(verificar_rol("disponibilidad-be")) 
 #TODO:para que se ejecute la verificacion de rol y si no cumple con el rol requerido, se lanza un error y ni entra en el endpoint
+"""dependencies=[Depends(verificar_roles("solicitud-be", "ubicacion-be")),Depends(verificar_rate_limit("reservar_conductor")),]"""
 @ruta4.post("conductores/{conductor_id}/reserva",response_model=SolicitudReserva,status_code=201,description="La reserva temporal se creó para esta solicitud.",)
 async def RealizarReserva(datos:SolicitudReserva,idempotency_key: str = Depends(verificar_idempotencia)):
     resultado=RegistrarReserva()
     return resultado
 
-@ruta4.get("conductores/cercanos", response_model=ResultadoBusquedaConductores, status_code=200,description="Búsqueda realizada; conductores puede ser lista vacía si no hay candidatos en ningún radio.")
+@ruta4.get("conductores/cercanos", response_model=ResultadoBusquedaConductores,
+        dependencies=[Depends(verificar_roles("solicitud-be", "ubicacion-be")),
+        Depends(verificar_rate_limit("buscar_conductores_cercanos"))],
+        status_code=200,
+        description="Búsqueda realizada; conductores puede ser lista vacía si no hay candidatos en ningún radio.")
 def BuscarConductoresCercanos(request:Request,response:Response,origen_latitud:float,origen_longitud:float,tipo_vehiculo:VehiculosSoportados,limite:int|None = None,):
     # Contrato exige Cache-Control: no-store (respuesta contiene coordenadas/ubicación)
     response.headers["Cache-Control"] = "no-store"
@@ -128,7 +139,9 @@ def BuscarConductoresCercanos(request:Request,response:Response,origen_latitud:f
     resultado = CandidatosCercanos.buscar(query,trace_id=request.state.request_id)
     return resultado
 
-@ruta4.put("conductores/{conductor_id}/estado-operativo",response_model=EstadoOperativoRegistrado)
+@ruta4.put("conductores/{conductor_id}/estado-operativo",response_model=EstadoOperativoRegistrado,
+        dependencies=[Depends(verificar_roles("conductores-be", "ubicacion-be")),
+        Depends(verificar_rate_limit("buscar_conductores_cercanos"))])
 def actualizarEstadoOperativo(request: Request,response: Response,conductor_id: UUID,body: EstadoOperativo):
     resultado, es_nuevo = ServicioEstadoOperativo.actualizar_estado(conductor_id=conductor_id,body=body,trace_id=request.state.request_id,)
     response.status_code = status.HTTP_201_CREATED if es_nuevo else status.HTTP_200_OK

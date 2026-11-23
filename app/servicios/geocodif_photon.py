@@ -1,5 +1,5 @@
-import logging, threading, time, urllib.parse, urllib.request, json
-from app.errores.exceptionsSemanticos import DependenciaNoDisponible
+import logging, threading, time, urllib.parse, urllib.request, json,urllib.error,socket
+from app.errores.exceptionsSemanticos import DependenciaNoDisponible,TiempoAgotado
 from app.esquemas.esquemas import ConsultaGeocodificacion
 from app.servicios.adaptador import GeoProveedor
 
@@ -51,10 +51,26 @@ class ProveedorPhoton(GeoProveedor):
                 with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                     payload = json.loads(resp.read().decode("utf-8"))
                 self._ultimo_tiempo_consulta = time.time()
-            except Exception as e:
+            except (TimeoutError, socket.timeout) as e:
                 self._ultimo_tiempo_consulta = time.time()
-                self.logger.exception ("[trace_id=%s]|Photon no disponible|Tipo: %s|Detalle: %s",trace_id,type(e).__name__,e)
-                raise DependenciaNoDisponible() from e
+                self.logger.warning("[trace_id=%s]|Timeout en Photon|Tipo: %s|Detalle: %s",
+                    trace_id,type(e).__name__,e,)
+                raise TiempoAgotado(detail="Photon tardo demaciado en responder.",retry_after=1) from e  # 504
+            except urllib.error.URLError as e:
+                self._ultimo_tiempo_consulta = time.time()
+                if isinstance(e.reason, (TimeoutError, socket.timeout)):
+                    self.logger.warning("[trace_id=%s]|Timeout de conexión en Photon|Tipo: %s|Detalle: %s",
+                        trace_id,type(e.reason).__name__,e.reason,)
+                    raise TiempoAgotado(detail="Photon tardo demaciado en responder.",retry_after=1) from e  # 504
+                self.logger.exception("[trace_id=%s]|Photon no disponible por URLError (503)|Tipo: %s|Detalle: %s",
+                    trace_id,type(e).__name__,e,)
+                raise DependenciaNoDisponible(retry_after=1) from e  # 503
+            except (json.JSONDecodeError, UnicodeDecodeError, OSError) as e:
+                self._ultimo_tiempo_consulta = time.time()
+                self.logger.exception(
+                    "[trace_id=%s]|Photon no disponible o respuesta inválida|Tipo: %s|Detalle: %s",
+                    trace_id,type(e).__name__,e,)
+                raise DependenciaNoDisponible(retry_after=1) from e  # 503
 
         respuesta = payload.get("features", [])
     
