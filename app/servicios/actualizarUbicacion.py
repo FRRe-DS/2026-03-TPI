@@ -16,12 +16,13 @@ class ActualizarUbicacionService:
         - Si está: realiza la actualización validando reglas de negocio. (es_nuevo = False -> 200)
         - Si no está: realiza su creación efímera con TTL. (es_nuevo = True -> 201)
         """
+        logger.info("[trace_id=%s]|Inicio endpoint actualizar ubicacion.",trace_id)
         ubicacion_existente = None
         # 1. Comprobar si se encuentra en Redis
         try:
             ubicacion_existente = UbicacionesCond.get(str(conductor_id))
         except NotFoundError:
-            logger.info("[trace_id=%s]|Conductor no posee registro en Redis:conductor_id %s",trace_id,conductor_id)
+            logger.debug("[trace_id=%s]|Conductor no posee registro en Redis:conductor_id %s",trace_id,conductor_id)
             ubicacion_existente = None
         except Exception as exc:
             logger.exception("[trace_id=%s]|Error al acceder a Redis para conductor conductor_id: %s",trace_id, conductor_id,)

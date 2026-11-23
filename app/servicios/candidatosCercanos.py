@@ -2,13 +2,14 @@ from datetime import datetime, timezone
 from typing import List
 from uuid import UUID
 from geopy.distance import geodesic
-from app.db.cache_config import cache
+import logging
 from app.modelos.cache_models import UbicacionesCond, CacheEstOp, CacheResTemp
-from app.esquemas import QueryCercanos, ResultadoBusquedaConductores, Candidatos, VehiculosSoportados
+from app.esquemas.esquemas import QueryCercanos, ResultadoBusquedaConductores, Candidatos, VehiculosSoportados
 from app.errores.exceptionsSemanticos import DependenciaNoDisponible
 from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutError as RedisTimeoutError
 from redis_om.model.model import NotFoundError
 
+logger=logging.getLogger(__name__)
 # Radios progresivos según contrato: inicia en 5 km, amplía en +1.5 km hasta máx 9.5 km
 RADIOS_PROGRESIVOS = [5.0, 6.5, 8.0, 9.5]
 
@@ -23,14 +24,16 @@ def _mock_verificar_habilitacion_m3(conductor_id: UUID, tipo_vehiculo: Vehiculos
 
 class CandidatosCercanos:
     @staticmethod
-    def buscar(query: QueryCercanos) -> ResultadoBusquedaConductores:
+    def buscar(query: QueryCercanos,trace_id:str) -> ResultadoBusquedaConductores:
+        logger.info("[trace_id=%s]|Inicio de busqueda cercana de candidatos.",trace_id)
         try:
             todas_ubicaciones = UbicacionesCond.find().all()
-        except Exception:
+        except Exception as e:
             # Redis no disponible → 503, no silenciar el fallo devolviendo lista vacía
+            logger.exception("[trace_id=%s]|Error al intentar acceder a la redis|Tipo = %s|Detalle = %s",trace_id,type(e).__name__,e)
             raise DependenciaNoDisponible(
                 detail="No se pudo acceder al almacén de ubicaciones (Redis). Intente nuevamente en unos instantes."
-            )
+            ) from e
 
         candidatos_finales: List[Candidatos] = []
         # radio_aplicado por defecto al máximo (si no hay candidatos en ningún radio)
@@ -51,6 +54,7 @@ class CandidatosCercanos:
                 distancia_km = geodesic(punto_origen, punto_conductor).kilometers
 
                 if distancia_km > radio_km:
+                    logger.debug("[trace_id=%s]|Candidato encontrado pero fuera del radio de busqueda",trace_id)
                     continue  # fuera del radio actual, descartar
 
                 # Validar connected y available desde cache propio (M4)
@@ -59,30 +63,46 @@ class CandidatosCercanos:
                     connected = getattr(estado_op, 'connected', False)
                     available = getattr(estado_op, 'available', False)
                     if not estado_op or not connected or not available:
+                        logger.debug("[trace_id=%s]|Candidato encontrado pero no cumple la regla de negocio de disponibilidad",trace_id)
                         continue
-                except NotFoundError:
+                except NotFoundError:#TODO: es cuestionable ya que se supone que se pregunta despues y M3 actualiza la tabla
                     continue  # sin registro de estado operativo → no es candidato, Redis está vivo
-                except (RedisConnectionError, RedisTimeoutError):
+                except (RedisConnectionError, RedisTimeoutError) as e:
+                    logger.exception("[trace_id=%s]|Error de redis|Tipo= %s|Detalle= %s",trace_id,type(e).__name__,e)
                     raise DependenciaNoDisponible(
-                        detail="No se pudo verificar el estado operativo del conductor (Redis no disponible)."
-                    )
-                except Exception:
+                        detail="No se pudo acceder a el estado operativo del conductor (Redis no disponible)."
+                    ) from e
+                except Exception as e:
+                    logger.exception("[trace_id=%s]|Error de inesperado de datos|Tipo= %s|Detalle= %s",trace_id,type(e).__name__,e)
                     continue  # dato corrupto u otro error puntual → descartar este candidato
 
                 # Verificar que no tenga reserva temporal activa
                 try: #TODO: Esto puede cambiar por contrato nuevo, verificar. 
                     reserva = CacheResTemp.get(str(conductor_id))
-                    if reserva and reserva.estado_temporal == "RESERVADO":
-                        continue  # reservado en otra solicitud, descartar
-                except Exception:
-                    continue  # no se pudo verificar reserva, descartar (no devolver sin validar)
+                    if reserva:
+                        if reserva.estado_temporal == "RESERVADO":
+                            logger.debug("[trace_id=%s]|Estado temporal %s impide candidatura|Conductor id =%s",trace_id,reserva.estado_temporal,conductor_id)
+                            continue  # reservado en otra solicitud, descartar
+                        else:
+                            logger.debug("[trace_id=%s]|Estado temporal %s permite candidatura|Conductor id =%s",trace_id,reserva.estado_temporal,conductor_id)
+                    else:
+                        logger.debug("[trace_id=%s]|Estado temporal no existe|Conductor id =%s",trace_id,conductor_id)
+                except (RedisConnectionError, RedisTimeoutError) as e:
+                    logger.exception("[trace_id=%s]|No se pudo acceder a registro de reservas|Tipo= %s|Detalle= %s",trace_id,type(e).__name__,e)
+                    raise DependenciaNoDisponible(detail="No se pudo acceder a el registro de reservas(Redis no disponible).") from e
+                #TODO: tiene ttl la tabla de reservas de la redis asi que este exeption estaria de mas, verificar
+                except Exception as e:
+                    logger.exception("[trace_id=%s]|No se pudo acceder a registro de reservas|Tipo= %s|Detalle= %s",trace_id,type(e).__name__,e)
+                    continue  # no se pudo acceder a reserva, descartar (no devolver sin validar)
 
                 # Verificar habilitación con M3 (APPROVED + vehículo habilitado)
                 # Si M3 falla, se descarta el candidato: M4 no devuelve candidatos sin validar
                 try:
                     if not _mock_verificar_habilitacion_m3(conductor_id, query.tipo_vehiculo):
+                        logger.debug("[trace_id=%s]|Candidato no habilidato por respuesta sincronica de M3, descartando|Conductor id = %s",trace_id,conductor_id)
                         continue
-                except Exception:
+                except Exception as e:
+                    logger.exception("[trace_id=%s]|Error de respuesta ante el modulo sincronico M3|Tipo= %s|Detalle = %s",trace_id,type(e).__name__,e)
                     continue  # M3 no disponible → descartar según contrato
 
                 # Candidato válido: construir objeto con ETA estimado (~3 min/km)
@@ -113,9 +133,12 @@ class CandidatosCercanos:
         # Aplicar límite si fue especificado
         if query.limite:
             candidatos_finales = candidatos_finales[:query.limite]
-
+        if candidatos_finales:
+            logger.info("[trace_id=%s]|Se encontraron candidatos.|Cantidad = %d",trace_id,len(candidatos_finales))
+        else:
+            logger.info("[trace_id=%s]|No see encontraron candidatos.|Se devuelve conductores vacio",trace_id)
+        
         return ResultadoBusquedaConductores(
             conductores=candidatos_finales,
             radio_aplicado_km=radio_aplicado,
-            generado_en=datetime.now(timezone.utc)
-        )
+            generado_en=datetime.now(timezone.utc))

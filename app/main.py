@@ -25,16 +25,16 @@ from app.servicios.actEstadoOperativo import ServicioEstadoOperativo
 from app.errores.exceptionsSemanticos import ErrorHealthCheck
 from app.db.cache_config import cache
 from app.servicios.calculosDeEstimacion import CalculosDeViaje
+from app.logs.logs_config import configurar_logging
+
+configurar_logging()
+logger = logging.getLogger(__name__)
 
 Base.metadata.create_all(bind=engine) #si no habia una tabla, la crea, si ya existia, no hace nada. 
 #Esto es para inicializar la base de datos y crear las tablas que se definan en models.py que hereden de Base.
 
 REQUEST_ID_PATTERN = re.compile(r'^[A-Za-z0-9._-]{1,128}$')
 # Configuración básica para que los mensajes salgan en tu terminal (consola)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
-logger = logging.getLogger("m4_backend")
 
 # Instanciamos la aplicación principal de FastAPI
 app = FastAPI(
@@ -55,7 +55,8 @@ async def agregar_o_respetar_request_id(request: Request, call_next):
     #Lo guardamos en request.state para que handlerManage.py lo use como trace_id
     request.state.request_id = xrequest_id
     #Mostramos en la terminal (logs) la petición junto con su ID de rastreo (alineado con RNF-14)
-    logger.info(f"Endpoint: {request.method} {request.url.path} | X-Request-ID: {xrequest_id}")
+    #TODO: verificar si todos los endpoints deben aparecer en el logs caso contrario discriminar los url confidenciales
+    logger.info("[trace_id=%s]|Peticion recibida|metodo=%s|ruta=%s",xrequest_id,request.method,request.url.path,)
     #Dejamos que la petición continúe su camino hacia los endpoints
     response = await call_next(request)
     #Inyectamos obligatoriamente el X-Request-ID en las cabeceras de la respuesta (éxito o error)[cite: 1]
@@ -87,40 +88,49 @@ def endpoint_actualizar_ubicacion(conductor_id: UUID,datos: ActualizarUbicacion,
     response.status_code = status.HTTP_201_CREATED if es_nuevo else status.HTTP_200_OK
     return resultado
 
+#TODO:en geocodificacion falta implementar retry-after y ocultar datos sensibles
 @ruta2.post("geocodificaciones",response_model=ResultadoGeocodificacion,status_code=200,
             description="Consulta realizada; coincidencias puede ser una lista vacía.")
-def RealizarGeocodificacion(datos:ConsultaGeocodificacion):
-    resultado = adaptadorJerarquico.resolver(datos)
+def RealizarGeocodificacion(datos:ConsultaGeocodificacion,request: Request,response:Response):
+    response.headers["Cache-Control"] = "no-store"
+    logger.info("[trace_id=%s]|Consulta de geocodificacion",request.state.request_id,)
+    resultado = adaptadorJerarquico.resolver(datos,trace_id=request.state.request_id,)
     return resultado
 
-#TODO: adaptarlo para soportar registro de logs de trazabilidad
 @ruta3.get("rutas/estimacion",response_model=ResultadoEstimacionRuta,status_code=status.HTTP_200_OK,summary="Estimar distancia y tiempo entre origen y destino",)
 def RealizarCalculosEstimados(origen_latitud: float,origen_longitud: float,destino_latitud: float,destino_longitud: float,
-    tipo_vehiculo: VehiculosSoportados,):
-    respuesta = QueryEstimacionRuta(origen_latitud=origen_latitud,origen_longitud=origen_longitud,
-        destino_latitud=destino_latitud,destino_longitud=destino_longitud,tipo_vehiculo=tipo_vehiculo,)
-    return CalculosDeViaje(respuesta)
+    tipo_vehiculo: VehiculosSoportados,request:Request):
+    query = QueryEstimacionRuta(origen_latitud=origen_latitud,
+                                origen_longitud=origen_longitud,
+                                destino_latitud=destino_latitud,
+                                destino_longitud=destino_longitud,
+                                tipo_vehiculo=tipo_vehiculo,)
+    logger.info("[trace_id=%s]|Consulta de calculo de tiempo/distancia estimados|tipo_vehiculo=%s",request.state.request_id,query.tipo_vehiculo,)
+    return CalculosDeViaje(query,trace_id=request.state.request_id)
 
+#TODO: falta implementar reserva
 #TODO:posiblemente deberia colocar dentro del decorador del endpoint el Depends(verificar_rol("disponibilidad-be")) 
 #TODO:para que se ejecute la verificacion de rol y si no cumple con el rol requerido, se lanza un error y ni entra en el endpoint
-@ruta4.post("conductores/{conductor_id}/reserva",response_model=SolicitudReserva,status_code=201,
-            description="La reserva temporal se creó para esta solicitud.",)
+@ruta4.post("conductores/{conductor_id}/reserva",response_model=SolicitudReserva,status_code=201,description="La reserva temporal se creó para esta solicitud.",)
 async def RealizarReserva(datos:SolicitudReserva,idempotency_key: str = Depends(verificar_idempotencia)):
     resultado=RegistrarReserva()
     return resultado
 
-@ruta4.get("conductores/cercanos", response_model=ResultadoBusquedaConductores, status_code=200,
-           description="Búsqueda realizada; conductores puede ser lista vacía si no hay candidatos en ningún radio.")
-def BuscarConductoresCercanos(query: QueryCercanos = Depends(), response: Response = None):
+@ruta4.get("conductores/cercanos", response_model=ResultadoBusquedaConductores, status_code=200,description="Búsqueda realizada; conductores puede ser lista vacía si no hay candidatos en ningún radio.")
+def BuscarConductoresCercanos(request:Request,response:Response,origen_latitud:float,origen_longitud:float,tipo_vehiculo:VehiculosSoportados,limite:int|None = None,):
     # Contrato exige Cache-Control: no-store (respuesta contiene coordenadas/ubicación)
     response.headers["Cache-Control"] = "no-store"
-    resultado = CandidatosCercanos.buscar(query)
+    query=QueryCercanos(origen_latitud=origen_latitud,
+                        origen_longitud=origen_longitud,
+                        tipo_vehiculo=tipo_vehiculo,
+                        limite=limite,)
+    logger.info("[trace_id=%s]|Consulta conductores cercanos|tipo_vehiculo=%s|limite=%s",request.state.request_id,query.tipo_vehiculo,query.limite,)
+    resultado = CandidatosCercanos.buscar(query,trace_id=request.state.request_id)
     return resultado
 
-@ruta4.put("conductores/{conductor_id}/estado",response_model=EstadoOperativoRegistrado)
+@ruta4.put("conductores/{conductor_id}/estado-operativo",response_model=EstadoOperativoRegistrado)
 def actualizarEstadoOperativo(request: Request,response: Response,conductor_id: UUID,body: EstadoOperativo):
-    resultado, es_nuevo = ServicioEstadoOperativo.actualizar_estado(conductor_id=conductor_id,body=body,
-                                                                    trace_id=request.state.request_id,)
+    resultado, es_nuevo = ServicioEstadoOperativo.actualizar_estado(conductor_id=conductor_id,body=body,trace_id=request.state.request_id,)
     response.status_code = status.HTTP_201_CREATED if es_nuevo else status.HTTP_200_OK
     return resultado
 
@@ -133,7 +143,7 @@ def consultar_liveness():
     """
     return {"status": "UP"}
 
-@ruta5.get("/ready", status_code=200)
+@ruta5.get("ready", status_code=200)
 def consultar_readiness():
     """
     READINESS:

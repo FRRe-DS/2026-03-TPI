@@ -31,12 +31,12 @@ class ProovedorGeoRef_Geopy(GeoProveedor):
             "lat_min": -28.5000,
             "lat_max": -27.2000,
             "lon_min": -59.5000,
-            "lon_max": -58.7000
-        }
+            "lon_max": -58.7000}
         # Configuramos un logger básico para registrar errores si ocurren
         self.logger = logging.getLogger(__name__)
 
-    def buscar(self, body: ConsultaGeocodificacion) -> dict:
+    def buscar(self, body: ConsultaGeocodificacion,trace_id:str) -> dict:
+        self.logger.info("[trace_id=%s]|Utilizacion de proveedor externo Geopy.",trace_id)
         restricciones = f"{body.direccion}, {body.provincia}" if body.provincia else f"{body.direccion}"
 
         cuadrante_busqueda = [
@@ -51,24 +51,19 @@ class ProovedorGeoRef_Geopy(GeoProveedor):
             # Control de espera entre peticiones para el servidor público
             if tiempo_transcurrido < self.TIEMPO_ESPERA_SEGUNDOS:
                 tiempo_a_dormir = self.TIEMPO_ESPERA_SEGUNDOS - tiempo_transcurrido
+                self.logger.debug("[trace_id=%s]|Tiempo de espera activo.|Faltan=%.2f",trace_id,tiempo_a_dormir)
                 time.sleep(tiempo_a_dormir)
 
             # timeout=5 evita que el hilo se cuelgue
             # viewbox y bounded limitan estrictamente al cuadrante de Resistencia/Corrientes
             # exactly_one=False habilita la obtención de una lista con múltiples coincidencias
             try:
-                ubicaciones = self.servicioExt.geocode(
-                    restricciones,
-                    viewbox=cuadrante_busqueda,
-                    bounded=True,
-                    country_codes=body.pais,
-                    exactly_one=False,
-                    timeout=5
-                )
-                
+                ubicaciones = self.servicioExt.geocode(restricciones,viewbox=cuadrante_busqueda,bounded=True,
+                    country_codes=body.pais,exactly_one=False,timeout=5) 
                 self._ultimo_tiempo_consulta = time.time()
                 # Si el servidor público no encuentra coincidencias, retornamos lista vacía
                 if not ubicaciones:
+                    self.logger.info("[trace_id=%s]|Busqueda Geopy sin resultados.",trace_id)
                     return {"coincidencias": []}
 
                 # Aquí se mapeará el resultado bruto de Geopy al formato JSON definitivo que exija el contrato
@@ -83,10 +78,10 @@ class ProovedorGeoRef_Geopy(GeoProveedor):
                         "etiqueta": loc.address,
                         "confianza": confianza
                     })
-
+                self.logger.info("[trace_id=%s]|Busqueda Geopy tuvo resultados.|Cant Result = %d",trace_id,len(geocoincidencias))
                 return {"coincidencias": geocoincidencias}
             # Actualizamos el timestamp igual para no reintentar instantáneamente si falló
             except (GeocoderTimedOut, GeopyError) as e:
                 self._ultimo_tiempo_consulta = time.time()
-                self.logger.warning(f"Geopy no disponible: {type(e).__name__} - {e}")
-                raise DependenciaNoDisponible()# 503
+                self.logger.exception("[trace_id=%s]|Geopy no disponible|Tipo: %s|Detalle: %s",trace_id,type(e).__name__,e)
+                raise DependenciaNoDisponible() from e# 503

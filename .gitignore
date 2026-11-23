@@ -15,3 +15,5 @@ __pycache__/
 desktop.ini
 mis-notas-rocio/
 .agents/
+app/logs/*.log
+*.log

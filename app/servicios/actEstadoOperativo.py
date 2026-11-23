@@ -16,23 +16,22 @@ class ServicioEstadoOperativo:
             CacheEstOp.get(str(conductor_id))
             return True
         except NotFoundError:
-            logger.debug("[trace_id=%s]|No existe estado operativo previo para conductor_id=%s",trace_id,conductor_id,)
+            logger.info("[trace_id=%s]|No existe estado operativo previo para conductor_id=%s",trace_id,conductor_id,)
             return False
         except Exception as exc:
-            logger.exception("[trace_id=%s]|Error al consultar estado operativo en Redis para conductor_id=%s",trace_id,conductor_id,)
+            logger.exception("[trace_id=%s]|Error al consultar estado operativo en Redis para conductor_id=%s|Tipo %s|Detalle %s",trace_id,conductor_id,type(exc).__name__,exc)
             raise DependenciaNoDisponible(detail="No se pudo consultar el estado operativo en Redis.") from exc
 
     @staticmethod
     def actualizar_estado(conductor_id: UUID,body: EstadoOperativo,trace_id: str,) -> tuple[EstadoOperativoRegistrado, bool]:
-        
+        logger.debug("[trace_id=%s]|Entrada a metodo actualizar_estado",trace_id)
         recibido_en = datetime.now(timezone.utc)
         # Obtenemos confirmación para distinguir 201 (nuevo) de 200 (actualizado)
         es_nuevo = not ServicioEstadoOperativo._existe_estado(conductor_id,trace_id)
         # Regla de negocio: si no está conectado, no puede estar disponible
         if not body.connected:
             available_efectivo = False
-            logger.warning(
-                "[trace_id=%s]|Conductor desconectado (connected=False); se fuerza available=False para conductor_id=%s",trace_id,conductor_id,)
+            logger.debug("[trace_id=%s]|Conductor desconectado (connected=False); se fuerza available=False para conductor_id=%s",trace_id,conductor_id,)
         else:
             available_efectivo = body.available
 

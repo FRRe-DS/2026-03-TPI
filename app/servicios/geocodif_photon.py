@@ -19,7 +19,8 @@ class ProveedorPhoton(GeoProveedor):
         }
         self.logger = logging.getLogger(__name__)
 
-    def buscar(self, body: ConsultaGeocodificacion) -> dict:
+    def buscar(self, body: ConsultaGeocodificacion,trace_id:str) -> dict:
+        self.logger.info("[trace_id=%s]|Utilizacion de proveedor externo Photon",trace_id)
         partes_consulta = [body.direccion.strip()]
         if body.provincia:
             partes_consulta.append(body.provincia.strip())
@@ -34,34 +35,29 @@ class ProveedorPhoton(GeoProveedor):
             f"{self.ZONA_PERMITIDA['lat_max']}"
         )
 
-        params = {
-            "q": consulta_texto,
-            "bbox": bbox,
-        }
+        params = {"q": consulta_texto,"bbox": bbox,}
         url = f"{self.base_url}?{urllib.parse.urlencode(params)}"
 
         with self._lock:
             ahora = time.time()
             transcurrido = ahora - self._ultimo_tiempo_consulta
             if transcurrido < self.TIEMPO_ESPERA_SEGUNDOS:
-                time.sleep(self.TIEMPO_ESPERA_SEGUNDOS - transcurrido)
+                tiempo_a_dormir = self.TIEMPO_ESPERA_SEGUNDOS - transcurrido
+                self.logger.info("[trace_id=%s]|Tiempo de espera activo.|Faltan=%.2f",trace_id,tiempo_a_dormir)
+                time.sleep(tiempo_a_dormir)
 
             try:
-                req = urllib.request.Request(
-                    url,
-                    headers={"User-Agent": "m4_transporte_app"},
-                )
+                req = urllib.request.Request(url,headers={"User-Agent": "m4_transporte_app"},)
                 with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                     payload = json.loads(resp.read().decode("utf-8"))
                 self._ultimo_tiempo_consulta = time.time()
             except Exception as e:
                 self._ultimo_tiempo_consulta = time.time()
-                self.logger.warning(f"Photon no disponible: {type(e).__name__}")
-                raise DependenciaNoDisponible()#ojo aca verificar mensaje detail
+                self.logger.exception ("[trace_id=%s]|Photon no disponible|Tipo: %s|Detalle: %s",trace_id,type(e).__name__,e)
+                raise DependenciaNoDisponible() from e
 
         respuesta = payload.get("features", [])
-        self.logger.info(f"Photon devolvió {len(respuesta)} resultados.")
-
+    
         coincidencias = []
         for candidato in respuesta:
             coords = candidato.get("geometry", {}).get("coordinates", [])
@@ -74,5 +70,8 @@ class ProveedorPhoton(GeoProveedor):
                 "etiqueta": body.direccion,
                 "confianza": 0.8,
             })
-
+        if coincidencias:
+            self.logger.info("[trace_id=%s]|Proveedor Photon obtuvo resultados.|Cantidad=%d",trace_id,len(coincidencias))
+        else:
+            self.logger.info("[trace_id=%s]|Proveedor Photon no obtuvo resultados.",trace_id)
         return {"coincidencias": coincidencias}

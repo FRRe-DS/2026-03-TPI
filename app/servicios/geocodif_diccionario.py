@@ -3,7 +3,6 @@ el propocito de este codigo es la utilizacion de un diccionario de ubicaciones c
 como opcion predeterminada para la geocodificacion, para evitar utilizar el servicio externo que es muchisimo
 mas lento y costoso, ademas de que el diccionario puede ser actualizado y mejorado con el tiempo.
 """
-from copy import error
 import json, unicodedata, logging
 from pathlib import Path
 from app.servicios.adaptador import GeoProveedor
@@ -17,6 +16,9 @@ class Dicc_geocodif(GeoProveedor):
         self.logger = logging.getLogger(__name__)
         # Se ejecuta UNA SOLA VEZ al iniciar la app, cargando el archivo en RAM
         self.ubicaciones_conocidas = self._cargar_en_memoria(ruta)
+        if self.ubicaciones_conocidas:
+            self.logger.info("Diccionario cargado exitosamente")
+
 
     def _cargar_en_memoria(self, ruta: str) -> dict:
         try:
@@ -24,8 +26,9 @@ class Dicc_geocodif(GeoProveedor):
             if archivo_path.exists():
                 with open(archivo_path, "r", encoding="utf-8") as f:
                     return json.load(f)
+            self.logger.warning("Archivo de diccionario local no encontrado ruta=%s",ruta,)
         except Exception:# el .exeption ya muestra el valor de la excepcion al final, asi que no hace falta colocarla, lo hace por detras
-            self.logger.exception("No se pudo cargar el diccionario local: %s")
+            self.logger.exception("No se pudo cargar el diccionario local: %s",ruta,)
         return {}
     
     @staticmethod
@@ -44,7 +47,8 @@ class Dicc_geocodif(GeoProveedor):
         )
         return texto
     
-    def buscar(self, body: ConsultaGeocodificacion) -> dict:
+    def buscar(self, body: ConsultaGeocodificacion,trace_id:str) -> dict:
+        self.logger.info("[trace_id=%s]|Busqueda por diccionario local.",trace_id)
         query_normalizada = self._normalizar_texto(body.direccion)
         pais_normalizado = self._normalizar_texto(body.pais) if body.pais else ""
         coincidencias_encontradas = []
@@ -65,4 +69,8 @@ class Dicc_geocodif(GeoProveedor):
                             "etiqueta": lugar["etiqueta"],
                             "confianza": lugar["confianza"],})
                         break  # Evita duplicar el mismo lugar si coinciden varios alias
+        if coincidencias_encontradas:
+            self.logger.info("[trace_id=%s]|Busqueda local exitosa.|Cantidad encontrada = %d",trace_id,len(coincidencias_encontradas))
+        else:
+            self.logger.info("[trace_id=%s]|Busqueda local no encontro resultados.",trace_id)
         return {"coincidencias": coincidencias_encontradas}
