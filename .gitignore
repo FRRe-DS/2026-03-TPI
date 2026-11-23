@@ -17,3 +17,4 @@ mis-notas-rocio/
 .agents/
 app/logs/*.log
 *.log
+.env
