@@ -1,5 +1,3 @@
-version: '3.8' #version compilable de docker
-
 services: # palabra reservada que indica que todo lo de abajo identado dentro de service, es parte del contenedor
   #los siguientes 2 servicios son para realizar keycloak en local para pruebas y comprobacion de respuestas de autenticacion
   keycloak-db:

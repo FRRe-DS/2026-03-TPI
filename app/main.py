@@ -19,12 +19,11 @@ from app.errores.exceptionsSemanticos import ErrorHealthCheck
 from app.errores.handlerManager import registrar_manejadores_excepciones
 from app.servicios.cadenaDeProveedores import AdaptadorEncadenado
 from app.servicios.calculosDeEstimacion import CalculosDeViaje
-from app.servicios.manejarReserva import RegistrarReserva
 from app.servicios.actualizarUbicacion import ActualizarUbicacionService
 from app.servicios.candidatosCercanos import CandidatosCercanos
 from app.servicios.actEstadoOperativo import ServicioEstadoOperativo
 from app.servicios.calculosDeEstimacion import CalculosDeViaje
-from app.servicios.manejarReservas import ReservaService
+from app.servicios.manejarReserva import ReservaService
 from app.seguridad.idempotenciaManager import verificar_idempotencia,guardar_respuesta_idempotente
 from app.seguridad.authManager import verificar_roles
 from app.seguridad.rate_limit_config import verificar_rate_limit
@@ -116,10 +115,10 @@ def RealizarCalculosEstimados(origen_latitud: float,origen_longitud: float,desti
     return CalculosDeViaje(query,trace_id=request.state.request_id)
 
 @ruta4.post("/conductores/{conductor_id}/reserva",response_model=ResultadoReservaTemporal,
-    dependencies=[Depends(verificar_roles("solicitud-be")),Depends(verificar_rate_limit("cambiar_reserva_temporal_conductor")),]
+    dependencies=[Depends(verificar_roles("solicitud-be")),Depends(verificar_rate_limit("reservar_conductor")),]
     ,description="Reservar temporalmente o informar el resultado de la oferta")
 async def RealizarReserva(conductor_id: UUID,datos: CambioReservaTemporal,response: Response,request:Request,
-    idempotencia_ctx: tuple[str, str]= Depends(verificar_idempotencia(request))):
+    idempotencia_ctx: tuple[str, str]= Depends(verificar_idempotencia)):
     resultado, es_nueva_reserva = ReservaService.cambiar_reserva(conductor_id, datos,trace_id = getattr(request.state, "request_id"))
     # Si se creó la reserva temporal devolvemos 201; si se actualizó devolvemos 200
     if es_nueva_reserva:
