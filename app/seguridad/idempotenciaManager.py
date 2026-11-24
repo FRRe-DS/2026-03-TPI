@@ -16,7 +16,7 @@ def guardar_respuesta_idempotente(idempotency_key: str,body_hashin:str,status_co
     """Guarda en Redis el resultado de la operación con TTL de 3 horas y el mismo hash SHA-256."""
     clave = f"idempotency:{idempotency_key}"
     registro = RegistroIdempotencia(
-        status=status_code,
+        status_code=status_code,
         body=body_dict,
         body_hash=body_hashin,)
     try:
@@ -54,6 +54,6 @@ async def verificar_idempotencia(request: Request) -> tuple[str, str]:
             logger.warning("[trace_id=%s]|Conflicto de hash para Idempotency-Key=%s",trace_id,idempotency_key,)
             raise HashBodyDiferente()
         #encontro idempotencia
-        logger.info("[trace_id=%s]|Cache hit de idempotencia|key=%s|status=%s",trace_id,idempotency_key,campo.status,)
-        raise RespuestaIdempotenteLista(status_code=campo.status, payload=campo.body)
+        logger.info("[trace_id=%s]|Cache hit de idempotencia|key=%s|status=%s",trace_id,idempotency_key,campo.status_code,)
+        raise RespuestaIdempotenteLista(status_code=campo.status_code, payload=campo.body)
     return idempotency_key,body_hash

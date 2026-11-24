@@ -5,30 +5,26 @@ import pytest
 from geopy.exc import GeocoderTimedOut, GeopyError
 
 from app.esquemas.esquemas import ConsultaGeocodificacion
-from app.errores.exceptionsSemanticos import DependenciaNoDisponible
+from app.errores.exceptionsSemanticos import DependenciaNoDisponible, TiempoAgotado
 from app.servicios.cadenaDeProveedores import AdaptadorEncadenado
 from app.servicios.geocodif_diccionario import Dicc_geocodif
 from app.servicios.geocodif_Geopy import ProovedorGeoRef_Geopy
 
-CONSULTA = ConsultaGeocodificacion(direccion='Plaza', provincia='Chaco', pais='ar')
+CONSULTA = ConsultaGeocodificacion(direccion='Plaza', localidad='Resistencia', pais='ar')
 COINCIDENCIA = dict(latitud=-27.4, longitud=-59, etiqueta='Plaza', confianza=1)
+TRACE_ID = 'unit-test'
 
 
 @pytest.fixture
 def cadena():
-    with patch('app.servicios.cadenaDeProveedores.Dicc_geocodif') as local, \
-         patch('app.servicios.cadenaDeProveedores.ProovedorGeoRef_Geopy') as externo:
-        instancia = AdaptadorEncadenado()
-        assert instancia.proveedorLocal is local.return_value
-        assert instancia.proveedorExt is externo.return_value
-        yield instancia
+    return AdaptadorEncadenado(proveedor_local=Mock(), proveedor_ext=Mock())
 
 
 def test_prioridad_local(cadena):
     esperado = {'coincidencias': [COINCIDENCIA]}
     cadena.proveedorLocal.buscar.return_value = esperado
-    assert cadena.resolver(CONSULTA) is esperado
-    cadena.proveedorLocal.buscar.assert_called_once_with(CONSULTA)
+    assert cadena.resolver(CONSULTA, trace_id=TRACE_ID) is esperado
+    cadena.proveedorLocal.buscar.assert_called_once_with(CONSULTA, TRACE_ID)
     cadena.proveedorExt.buscar.assert_not_called()
 
 
@@ -37,23 +33,22 @@ def test_prioridad_local(cadena):
 def test_fallback_y_ambos_vacios(cadena, local, externo):
     cadena.proveedorLocal.buscar.return_value = local
     cadena.proveedorExt.buscar.return_value = externo
-    assert cadena.resolver(CONSULTA) is externo
-    cadena.proveedorExt.buscar.assert_called_once_with(CONSULTA)
+    assert cadena.resolver(CONSULTA, trace_id=TRACE_ID) is externo
+    cadena.proveedorExt.buscar.assert_called_once_with(CONSULTA, TRACE_ID)
 
 
 def test_error_externo_es_de_negocio(cadena):
     cadena.proveedorLocal.buscar.return_value = {'coincidencias': []}
     cadena.proveedorExt.buscar.side_effect = DependenciaNoDisponible()
     with pytest.raises(DependenciaNoDisponible):
-        cadena.resolver(CONSULTA)
+        cadena.resolver(CONSULTA, trace_id=TRACE_ID)
 
 
-@pytest.mark.xfail(strict=True, raises=OSError, reason='La cadena no captura fallos del proveedor local')
 def test_fallback_si_local_falla(cadena):
     cadena.proveedorLocal.buscar.side_effect = OSError('archivo ilegible')
     cadena.proveedorExt.buscar.return_value = {'coincidencias': [COINCIDENCIA]}
-    assert cadena.resolver(CONSULTA) == {'coincidencias': [COINCIDENCIA]}
-    cadena.proveedorExt.buscar.assert_called_once_with(CONSULTA)
+    assert cadena.resolver(CONSULTA, trace_id=TRACE_ID) == {'coincidencias': [COINCIDENCIA]}
+    cadena.proveedorExt.buscar.assert_called_once_with(CONSULTA, TRACE_ID)
 
 
 @pytest.mark.parametrize('existe,contenido,esperado', [
@@ -86,7 +81,7 @@ def test_busqueda_local_y_alias_sin_duplicados(direccion, numero):
     with patch.object(Dicc_geocodif, '_cargar_en_memoria', return_value=datos):
         proveedor = Dicc_geocodif()
     # Namespace permite cubrir defensas internas que Pydantic impide alcanzar.
-    resultado = proveedor.buscar(SimpleNamespace(direccion=direccion, provincia='', pais=''))
+    resultado = proveedor.buscar(SimpleNamespace(direccion=direccion, localidad='', pais=''), TRACE_ID)
     assert resultado == {'coincidencias': [COINCIDENCIA] * numero}
 
 
@@ -105,8 +100,8 @@ def test_mapeo_geopy_y_parametros(geopy, importance, esperado):
     proveedor, dormir = geopy
     proveedor.servicioExt.geocode.return_value = [SimpleNamespace(
         latitude=-27.4, longitude=-59, address='Plaza', raw={'importance': importance})]
-    assert proveedor.buscar(CONSULTA) == {'coincidencias': [{**COINCIDENCIA, 'confianza': esperado}]}
-    proveedor.servicioExt.geocode.assert_called_once_with('Plaza, Chaco',
+    assert proveedor.buscar(CONSULTA, TRACE_ID) == {'coincidencias': [{**COINCIDENCIA, 'confianza': esperado}]}
+    proveedor.servicioExt.geocode.assert_called_once_with('Plaza, Resistencia',
         viewbox=[(-27.2, -59.5), (-28.5, -58.7)], bounded=True,
         country_codes='ar', exactly_one=False, timeout=5)
     dormir.assert_not_called()
@@ -118,17 +113,20 @@ def test_geopy_sin_resultados_y_rate_limit(geopy, vacio):
     proveedor, dormir = geopy
     proveedor._ultimo_tiempo_consulta = 99.5
     proveedor.servicioExt.geocode.return_value = vacio
-    consulta = SimpleNamespace(direccion='Plaza', provincia='', pais='ar')
-    assert proveedor.buscar(consulta) == {'coincidencias': []}
-    dormir.assert_called_once_with(1.0)
+    consulta = SimpleNamespace(direccion='Plaza', localidad='', pais='ar')
+    assert proveedor.buscar(consulta, TRACE_ID) == {'coincidencias': []}
+    dormir.assert_called_once_with(0.8)
     assert proveedor.servicioExt.geocode.call_args.args == ('Plaza',)
 
 
-@pytest.mark.parametrize('error', [GeocoderTimedOut, GeopyError])
-def test_geopy_traduce_error_y_actualiza_reloj(geopy, error):
+@pytest.mark.parametrize('error,status,clase_esperada', [
+    (GeocoderTimedOut, 504, TiempoAgotado),
+    (GeopyError, 503, DependenciaNoDisponible),
+])
+def test_geopy_traduce_error_y_actualiza_reloj(geopy, error, status, clase_esperada):
     proveedor, _ = geopy
     proveedor.servicioExt.geocode.side_effect = error('fallo')
-    with pytest.raises(DependenciaNoDisponible) as exc:
-        proveedor.buscar(CONSULTA)
-    assert exc.value.status_code == 503
+    with pytest.raises(clase_esperada) as exc:
+        proveedor.buscar(CONSULTA, TRACE_ID)
+    assert exc.value.status == status
     assert proveedor._ultimo_tiempo_consulta == 100

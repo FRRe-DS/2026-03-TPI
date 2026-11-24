@@ -99,7 +99,7 @@ class HashBodyDiferente(ProblemaDominio):
         super().__init__(
             type = "/errores/conflictohash/",
             title = "Conflicto",
-            status = 409,
+            status = 422,
             detail = detail,
             code = "IDEMPOTENCIA_CONFLICTO"
         )

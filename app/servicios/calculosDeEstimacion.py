@@ -23,8 +23,12 @@ def CalculosDeViaje(datos: QueryEstimacionRuta,trace_id:str) -> ResultadoEstimac
         raise DependenciaNoDisponible(retry_after=1) from e
     
     distancia_estimada_km = round(distancia_linea_recta_km * FACTOR_RUTAS_URBANAS, 2)
-    velocidad_kmh = (VELOCIDAD_MOTO_KMH if datos.tipo_vehiculo == VehiculosSoportados.MOTO else VELOCIDAD_AUTO_KMH)
-    eta_minutos = max(1, math.ceil((distancia_estimada_km / velocidad_kmh) * 60))
+    velocidad_kmh = (
+        VELOCIDAD_MOTO_KMH
+        if datos.tipo_vehiculo == VehiculosSoportados.MOTO
+        else VELOCIDAD_AUTO_KMH
+    )
+    eta_minutos = math.ceil((distancia_estimada_km / velocidad_kmh) * 60)
     tiempo=datetime.now(timezone.utc)
     logger.info("[trace_id=%s]|Calculo exitoso.|Distancia estimada km =%.2f|ETA min=%d|Tiempo de calculo = %s|Fuente = Local",trace_id,distancia_estimada_km,eta_minutos,tiempo)
     return ResultadoEstimacionRuta(

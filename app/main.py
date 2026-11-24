@@ -105,7 +105,7 @@ def RealizarGeocodificacion(datos:ConsultaGeocodificacion,request: Request,respo
             status_code=status.HTTP_200_OK,
             summary="Estimar distancia y tiempo entre origen y destino",)
 def RealizarCalculosEstimados(origen_latitud: float,origen_longitud: float,destino_latitud: float,destino_longitud: float,
-    tipo_vehiculo: VehiculosSoportados,request:Request):
+    request: Request, tipo_vehiculo: VehiculosSoportados | None = None):
     query = QueryEstimacionRuta(origen_latitud=origen_latitud,
                                 origen_longitud=origen_longitud,
                                 destino_latitud=destino_latitud,

@@ -36,7 +36,7 @@ class ProovedorGeoRef_Geopy(GeoProveedor):
 
     def buscar(self, body: ConsultaGeocodificacion,trace_id:str) -> dict:
         self.logger.info("[trace_id=%s]|Utilizacion de proveedor externo Geopy.",trace_id)
-        restricciones = f"{body.direccion}, {body.provincia}" if body.provincia else f"{body.direccion}"
+        restricciones = f"{body.direccion}, {body.localidad}" if body.localidad else f"{body.direccion}"
 
         cuadrante_busqueda = [
             (self.ZONA_PERMITIDA["lat_max"], self.ZONA_PERMITIDA["lon_min"]),

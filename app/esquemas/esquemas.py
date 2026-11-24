@@ -25,8 +25,8 @@ class Coordenada(BaseModel):
     longitud: float = Field(..., ge=-180.0, le=180.0, description="Longitud en grados decimales")
 
 class FuenteInfo(str,Enum):
-    PROVEEDOR_MAPA="PROVEEDOR_MAPA"
-    ESTIMACION_LOCAL="ESTIMACION_LOCAL"
+    PROVEEDOR_MAPA="proveedor_mapa"
+    ESTIMACION_LOCAL="estimacion_local"
 
 class VehiculosSoportados(str,Enum):
     AUTO="AUTO"
@@ -44,15 +44,15 @@ class UbicacionRegistrada(BaseModel):
     timestamp_ubicacion: datetime = Field(..., description="Timestamp de la ubicación en formato ISO 8601")
     recibida_en: datetime = Field(..., description="Timestamp de recepción en formato ISO 8601")
     vigente: bool = Field(..., description="Indica si la ubicación es la más reciente y válida")
-    expira_en: datetime = Field(..., description="Timestamp de expiración en formato ISO 8601")
+    expira_en: Optional[datetime] = Field(default=None, description="Timestamp de expiración en formato ISO 8601")
     
 class ConsultaGeocodificacion(BaseModel):
     model_config = ConfigDict(extra="forbid") #debido a que el contrato las propiedades adicionales es false
-    direccion: str = Field(..., min_length=1, description="Calle y altura")
-    provincia: str = Field(default=None, description="Provincia o región")
+    direccion: str = Field(..., min_length=1, max_length=300, description="Calle y altura")
+    localidad: Optional[str] = Field(default=None, max_length=120)
     pais: str = Field(..., min_length=2, max_length=2, description="Código ISO de país de 2 letras (ej. ar)")
 
-    @field_validator('direccion', 'provincia', 'pais')
+    @field_validator('direccion', 'localidad', 'pais')
     @classmethod
     def validar_textos_no_vacios(cls, v: str) -> str:
         # v ya es un string garantizado por Pydantic. 
@@ -82,7 +82,7 @@ class CoincidenciasGeolocalizacion(BaseModel):
     latitud: float =Field(...,ge=-90,le=90,description="latitud resultante con limitancias terricolas")
     longitud: float =Field(...,ge=-180,le=180,description="longitud resultante con limitancias terricolas")
     etiqueta: str =Field(...,description="direccion lenguaje natural el cual se asocia la coordenada")
-    confianza: float =Field(ge=0,le=1)
+    confianza: Optional[float] = Field(default=None, ge=0, le=1)
     #son cosas que nos devuelve el servicio externo o el diccionario de ubicaciones, no es posible dejarlos en blanco
 
 class ResultadoGeocodificacion(BaseModel):
@@ -95,12 +95,12 @@ class QueryEstimacionRuta(BaseModel):
     origen_longitud: float = Field(..., ge=-180.0, le=180.0)
     destino_latitud: float = Field(..., ge=-90.0, le=90.0)
     destino_longitud: float = Field(..., ge=-180.0, le=180.0)
-    tipo_vehiculo: VehiculosSoportados = Field(...)
+    tipo_vehiculo: Optional[VehiculosSoportados] = Field(default=None)
     
 class ResultadoEstimacionRuta(BaseModel):
     model_config = ConfigDict(extra="forbid") #debido a que el contrato las propiedades adicionales es false
-    distancia_estimada_km: float = Field(..., gt=0, description="Distancia estimada de ruta en km")
-    eta_minutos: int = Field(..., gt=0, description="Tiempo estimado en minutos")
+    distancia_estimada_km: float = Field(..., ge=0, description="Distancia estimada de ruta en km")
+    eta_minutos: int = Field(..., ge=0, description="Tiempo estimado en minutos")
     calculado_en: datetime = Field(..., description="Timestamp UTC del momento del cálculo")
     fuente: FuenteInfo = Field(..., description="proveedor_mapa o estimacion_local")
 
@@ -128,8 +128,8 @@ class QueryCercanos(BaseModel):
 class Candidatos(BaseModel):
     model_config = ConfigDict(extra="forbid") #debido a que el contrato las propiedades adicionales es false
     conductor_id: UUID = Field(..., description="Identificador único del conductor")
-    distancia_origen_km: float = Field(..., description="Distancia entre el conductor y el origen en kilómetros")
-    eta_retiro_minutos: Optional[int] = Field(ge=0,description="Tiempo estimado de llegada del conductor al origen en minutos")
+    distancia_origen_km: float = Field(..., ge=0, description="Distancia entre el conductor y el origen en kilómetros")
+    eta_retiro_minutos: Optional[int] = Field(default=None, ge=0,description="Tiempo estimado de llegada del conductor al origen en minutos")
     tipo_vehiculo: VehiculosSoportados = Field(..., description="Tipo de vehículo del conductor")
 
 class ResultadoBusquedaConductores(BaseModel):
@@ -140,7 +140,7 @@ class ResultadoBusquedaConductores(BaseModel):
     
 class EstadoOperativo(BaseModel):
     model_config = ConfigDict(extra="forbid") #debido a que el contrato las propiedades adicionales es false
-    event_id: Optional[str] = Field(default=None, description="ID del evento asociado (opcional)")
+    event_id: Optional[UUID] = Field(default=None, description="ID del evento asociado (opcional)")
     connected: bool = Field(..., description="Indica si el conductor desea estar conectado a la app")
     available: bool = Field(..., description="Indica si el conductor desea recibir solicitudes")
     timestamp_evento: Optional[datetime] = Field(default=None, description="Timestamp del evento en formato ISO 8601")
@@ -148,7 +148,7 @@ class EstadoOperativo(BaseModel):
 class EstadoOperativoRegistrado(BaseModel):
     model_config = ConfigDict(extra="forbid") #debido a que el contrato las propiedades adicionales es false
     conductor_id: UUID = Field(..., description="Identificador único del conductor")
-    event_id: Optional[str] = Field(default=None, description="ID del evento asociado (opcional)")
+    event_id: Optional[UUID] = Field(default=None, description="ID del evento asociado (opcional)")
     connected: bool = Field(..., description="Indica si el conductor desea estar conectado a la app")
     available: bool = Field(..., description="Indica si el conductor desea recibir solicitudes")
     actualizado_en: Optional[datetime] = Field(default=None, description="Timestamp del evento aplicado, si M3 lo envió; en caso contrario, puede omitirse.")

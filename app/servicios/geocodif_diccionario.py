@@ -50,6 +50,8 @@ class Dicc_geocodif(GeoProveedor):
     def buscar(self, body: ConsultaGeocodificacion,trace_id:str) -> dict:
         self.logger.info("[trace_id=%s]|Busqueda por diccionario local.",trace_id)
         query_normalizada = self._normalizar_texto(body.direccion)
+        if not query_normalizada:
+            return {"coincidencias": []}
         pais_normalizado = self._normalizar_texto(body.pais) if body.pais else ""
         coincidencias_encontradas = []
         for _, lista_lugares in self.ubicaciones_conocidas.items():

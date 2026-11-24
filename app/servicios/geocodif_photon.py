@@ -22,8 +22,8 @@ class ProveedorPhoton(GeoProveedor):
     def buscar(self, body: ConsultaGeocodificacion,trace_id:str) -> dict:
         self.logger.info("[trace_id=%s]|Utilizacion de proveedor externo Photon",trace_id)
         partes_consulta = [body.direccion.strip()]
-        if body.provincia:
-            partes_consulta.append(body.provincia.strip())
+        if body.localidad:
+            partes_consulta.append(body.localidad.strip())
         if body.pais:
             partes_consulta.append(body.pais.strip())
 

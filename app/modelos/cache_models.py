@@ -78,7 +78,7 @@ class CacheResTemp(HashModel):#usa ttl
         database = cache
 
 class RegistroIdempotencia(BaseModel):
-    status_code: int = Field(...,ge=200, le=599,description="codigo error http") 
+    status_code: int = Field(...,ge=200, le=599,description="codigo de estado HTTP")
     body: Dict[str, Any] = Field(...,description="body json que debe resguardar/retornar")
     body_hash: str = Field(...,description="codigo hash unico para cada body")
     

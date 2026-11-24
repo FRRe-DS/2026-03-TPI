@@ -7,24 +7,15 @@ pytest tests/unitarios -v
 ```
 
 No se importa `app.main`, se instancia FastAPI, se usa TestClient ni se hacen
-peticiones HTTP. Los servicios que importan infraestructura se cargan con
-módulos sustitutos bajo `patch.dict`, sin ejecutar configuración ni modelos Redis.
-Archivos, reloj, esperas, geocodificador y persistencia se sustituyen por mocks.
-Los handlers se invocan directamente con objetos simples y una app mockeada.
+peticiones HTTP. Los servicios que usan infraestructura se cargan con módulos
+sustitutos bajo `patch.dict`; los modelos/cache y `NotFoundError` de Redis se
+reemplazan por fakes en memoria. No se conecta a PostgreSQL ni a Redis.
+Archivos, reloj, esperas, geocodificadores y persistencia se sustituyen por
+mocks. Los handlers se invocan directamente con objetos simples y una app mock.
 
-## Limitaciones detectadas en el código de producción
-
-- `CalculosDeViaje` contiene `pass`. No existen velocidades para AUTO/MOTO.
-- `RegistrarReserva` contiene `pass`, sin parámetros ni operaciones de persistencia.
-- La cadena propaga errores locales en lugar de consultar el proveedor externo.
-- Idempotencia intenta leer `body_hash` de la clave string en lugar del registro;
-  además usa `status_code` aunque el modelo declara `status`.
-
-Los contratos afectados usan `xfail(strict=True)` y restringen el tipo de error
-esperado. No representan funcionalidades verificadas: un XPASS exige revisar
-la prueba al implementar/corregir el servicio. Los tests de rutas definen una
-posible integración con geodesic; la fórmula de ETA necesita velocidades oficiales.
-No puede afirmarse cobertura funcional completa mientras existan estos pendientes.
+Los tests de esquemas cubren nombres de campos, obligatoriedad, límites y enums
+del `openapi.yml` vigente. Los tests de servicios comprueban las transiciones
+unitarias, errores HTTP y TTL con dependencias simuladas.
 
 Si coverage está instalado, medir por ramas los módulos aislados:
 
