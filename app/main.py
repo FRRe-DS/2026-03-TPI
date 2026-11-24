@@ -7,27 +7,28 @@ Asi como la inyeccion de dependencias para la base de datos.
 Y codigo autoejecutable segun decoradores, los cuales responden a los endpoints de la API.
 ============================================================
 """
+import logging,uuid,re
 from app.db.database_config import engine, Base #se importan para crear las tablas en la base de datos, y para poder realizar consultas a la bd
 from app.modelos import db_models #se importa models para que se ejecute el codigo de models.py y se creen las tablas en la base de datos
 from fastapi import FastAPI, Request, APIRouter, Depends, status, Response
+from app.db.cache_config import cache
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-import logging,uuid,re
 from app.esquemas.esquemas import *
+from app.errores.exceptionsSemanticos import ErrorHealthCheck
 from app.errores.handlerManager import registrar_manejadores_excepciones
 from app.servicios.cadenaDeProveedores import AdaptadorEncadenado
 from app.servicios.calculosDeEstimacion import CalculosDeViaje
 from app.servicios.manejarReserva import RegistrarReserva
 from app.servicios.actualizarUbicacion import ActualizarUbicacionService
 from app.servicios.candidatosCercanos import CandidatosCercanos
-from app.seguridad.idempotenciaManager import verificar_idempotencia
 from app.servicios.actEstadoOperativo import ServicioEstadoOperativo
-from app.errores.exceptionsSemanticos import ErrorHealthCheck
-from app.db.cache_config import cache
 from app.servicios.calculosDeEstimacion import CalculosDeViaje
-from app.logs.logs_config import configurar_logging
+from app.servicios.manejarReservas import ReservaService
+from app.seguridad.idempotenciaManager import verificar_idempotencia,guardar_respuesta_idempotente
 from app.seguridad.authManager import verificar_roles
 from app.seguridad.rate_limit_config import verificar_rate_limit
+from app.logs.logs_config import configurar_logging
 
 configurar_logging()
 logger = logging.getLogger(__name__)
@@ -114,12 +115,20 @@ def RealizarCalculosEstimados(origen_latitud: float,origen_longitud: float,desti
     logger.info("[trace_id=%s]|Consulta de calculo de tiempo/distancia estimados|tipo_vehiculo=%s",request.state.request_id,query.tipo_vehiculo,)
     return CalculosDeViaje(query,trace_id=request.state.request_id)
 
-#TODO: falta implementar reserva
-#TODO:posiblemente deberia colocar dentro del decorador del endpoint el Depends(verificar_rol("disponibilidad-be")) 
-"""dependencies=[Depends(verificar_roles("solicitud-be", "ubicacion-be")),Depends(verificar_rate_limit("reservar_conductor")),]"""
-@ruta4.post("conductores/{conductor_id}/reserva",response_model=SolicitudReserva,status_code=201,description="La reserva temporal se creó para esta solicitud.",)
-async def RealizarReserva(datos:SolicitudReserva,idempotency_key: str = Depends(verificar_idempotencia)):
-    resultado=RegistrarReserva()
+@ruta4.post("/conductores/{conductor_id}/reserva",response_model=ResultadoReservaTemporal,
+    dependencies=[Depends(verificar_roles("solicitud-be")),Depends(verificar_rate_limit("cambiar_reserva_temporal_conductor")),]
+    ,description="Reservar temporalmente o informar el resultado de la oferta")
+async def RealizarReserva(conductor_id: UUID,datos: CambioReservaTemporal,response: Response,request:Request,
+    idempotencia_ctx: tuple[str, str]= Depends(verificar_idempotencia(request))):
+    resultado, es_nueva_reserva = ReservaService.cambiar_reserva(conductor_id, datos,trace_id = getattr(request.state, "request_id"))
+    # Si se creó la reserva temporal devolvemos 201; si se actualizó devolvemos 200
+    if es_nueva_reserva:
+        response.status_code = status.HTTP_201_CREATED
+    else:
+        response.status_code = status.HTTP_200_OK
+    bodyJson=resultado.model_dump(mode="json")
+    idempotency_key,bhash = idempotencia_ctx
+    guardar_respuesta_idempotente(idempotency_key,bhash,response.status_code,body_dict=bodyJson,)
     return resultado
 
 @ruta4.get("conductores/cercanos", response_model=ResultadoBusquedaConductores,
