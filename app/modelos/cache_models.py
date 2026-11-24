@@ -4,9 +4,16 @@ from redis_om import HashModel
 from uuid import UUID
 from app.db.cache_config import cache
 from datetime import datetime
-from app.esquemas.esquemas import EstadoTmp, Coordenada
 from enum import Enum
 
+class EstadoTmp(str,Enum):
+    RESERVADO="RESERVADO"
+    LIBERADO="LIBERADO"
+
+class Coordenada(BaseModel):
+    latitud: float = Field(..., ge=-90.0, le=90.0, description="Latitud en grados decimales")
+    longitud: float = Field(..., ge=-180.0, le=180.0, description="Longitud en grados decimales")
+#lo de abajo no es necesario y tal vez no es correcto modelar
 # --- PARCHES TEMPORALES (Simulando lo que falta importar/crear) ---
 class EstadoConductor(str, Enum):
     DESCONECTADO = "DESCONECTADO"
@@ -16,7 +23,7 @@ class EstadoConductor(str, Enum):
 class DetalleVehiculo(BaseModel):
     modelo: str = "Simulado"
 # ------------------------------------------------------------------
-
+#.................creo que esto no se ocupa...............................
 class ConductorCache(HashModel):
     # Campos primitivos con tipos de datos comunes estrictos
     conductor_id: int = Field(..., index=True)  # Indexado para búsquedas rápidas
@@ -44,7 +51,7 @@ class ConductorCache(HashModel):
 
     class Meta:
         database = cache  # <-- Corregido: variable unificada con el import
-
+#...................................................................................
 class UbicacionesCond(HashModel):#usa ttl
     conductor_id: UUID = Field(...,primary_key=True,description="id del conductor que reporta la ubicacion")
     geo:Coordenada = Field(...)
@@ -62,14 +69,13 @@ class CacheEstOp(HashModel):
             database = cache
 
 class CacheResTemp(HashModel):#usa ttl
-    conductor_id: UUID = Field(...,index=True)
+    conductor_id: UUID = Field(...,primary_key=True)
     solicitud_id: UUID = Field(...,index=True)
-    estado_temporal: EstadoTmp = Field(...,description="")
-    origen: Coordenada = Field(...)
-    destino: Coordenada = Field(...)
-    actualizado_en: datetime = Field()
+    estado_temporal: EstadoTmp = Field(...,description="bloqueo o no de lo que hacemos")
+    actualizado_en: datetime = Field(..., description="datetime de momento de ultima actualizacion")
+    expira_en:datetime = Field(..., description="datetime de momento de ttl")
     class Meta:
-            database = cache
+        database = cache
 
 class RegistroIdempotencia(BaseModel):
     status_code: int = Field(...,ge=200, le=599,description="codigo error http") 
