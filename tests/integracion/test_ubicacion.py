@@ -28,6 +28,9 @@ def test_ubicacion_creacion_nueva_201(mock_expire, mock_save, mock_get, cliente_
     datos = response.json()
     assert datos["vigente"] is True
     assert datos["conductor_id"] == CONDUCTOR_ID
+    assert datos["timestamp_ubicacion"]
+    assert datos["recibida_en"]
+    assert response.headers["x-request-id"]
 
 @patch("app.servicios.actualizarUbicacion.UbicacionesCond.get")
 @patch("app.servicios.actualizarUbicacion.UbicacionesCond.save")
@@ -49,6 +52,7 @@ def test_ubicacion_actualizacion_200(mock_save, mock_get, cliente_test):
     # El servicio debe retornar False (es_nuevo) y el router responder 200 OK
     assert response.status_code == 200
     mock_ubicacion_existente.save.assert_called_once_with()
+    assert response.headers["x-request-id"]
 
 @patch("app.servicios.actualizarUbicacion.UbicacionesCond.get")
 def test_ubicacion_rechazo_timestamp_antiguo_409(mock_get, cliente_test):
@@ -69,3 +73,6 @@ def test_ubicacion_rechazo_timestamp_antiguo_409(mock_get, cliente_test):
     
     # La regla de negocio debe levantar ErrorTimeStamp y el router mapearlo a 409
     assert response.status_code == 409
+    assert response.json()["status"] == 409
+    assert response.headers["content-type"] == "application/problem+json"
+    assert response.headers["x-request-id"]

@@ -10,7 +10,7 @@ Y codigo autoejecutable segun decoradores, los cuales responden a los endpoints 
 import logging,uuid,re
 from app.db.database_config import engine, Base #se importan para crear las tablas en la base de datos, y para poder realizar consultas a la bd
 from app.modelos import db_models #se importa models para que se ejecute el codigo de models.py y se creen las tablas en la base de datos
-from fastapi import FastAPI, Request, APIRouter, Depends, status, Response
+from fastapi import FastAPI, Request, APIRouter, Depends, status, Response, Query
 from app.db.cache_config import cache
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -71,14 +71,14 @@ el codigo, si algo saliera mal no haria falta buscar tanto codigo o como premisa
 cumplir su responsabilidad asociada.
 
 '''
-ruta1 = APIRouter(prefix="/api/v1/",tags=["Ubicaciones"])
-ruta2 = APIRouter(prefix="/api/v1/",tags=["Geocodificacion"])
-ruta3 = APIRouter(prefix="/api/v1/",tags=["Rutas"])
-ruta4 = APIRouter(prefix="/api/v1/",tags=["Disponibilidad"])
-ruta5 = APIRouter(prefix="/health/",tags=["Salud"])
+ruta1 = APIRouter(prefix="/api/v1",tags=["Ubicaciones"])
+ruta2 = APIRouter(prefix="/api/v1",tags=["Geocodificacion"])
+ruta3 = APIRouter(prefix="/api/v1",tags=["Rutas"])
+ruta4 = APIRouter(prefix="/api/v1",tags=["Disponibilidad"])
+ruta5 = APIRouter(prefix="/health",tags=["Salud"])
 adaptadorJerarquico = AdaptadorEncadenado()
 
-@ruta1.put("conductores/{conductor_id}/ubicacion",response_model=UbicacionRegistrada,
+@ruta1.put("/conductores/{conductor_id}/ubicacion",response_model=UbicacionRegistrada,
             dependencies=[Depends(verificar_roles("conductores-be", "ubicacion-be")),
             Depends(verificar_rate_limit("actualizar_ubicacion"))])
 def endpoint_actualizar_ubicacion(conductor_id: UUID,datos: ActualizarUbicacion,response: Response,request: Request):
@@ -88,7 +88,7 @@ def endpoint_actualizar_ubicacion(conductor_id: UUID,datos: ActualizarUbicacion,
     response.status_code = status.HTTP_201_CREATED if es_nuevo else status.HTTP_200_OK
     return resultado
 
-@ruta2.post("geocodificaciones",response_model=ResultadoGeocodificacion,
+@ruta2.post("/geocodificaciones",response_model=ResultadoGeocodificacion,
             dependencies=[Depends(verificar_roles("solicitud-be", "ubicacion-be")),
             Depends(verificar_rate_limit("geocodificar"))],
             status_code=200,
@@ -99,13 +99,19 @@ def RealizarGeocodificacion(datos:ConsultaGeocodificacion,request: Request,respo
     resultado = adaptadorJerarquico.resolver(datos,trace_id=request.state.request_id,)
     return resultado
 
-@ruta3.get("rutas/estimacion",response_model=ResultadoEstimacionRuta,
+@ruta3.get("/rutas/estimacion",response_model=ResultadoEstimacionRuta,
             dependencies=[Depends(verificar_roles("solicitud-be", "tarifas-be", "reservas-be", "ubicacion-be")),
             Depends(verificar_rate_limit("estimar_ruta"))],
             status_code=status.HTTP_200_OK,
             summary="Estimar distancia y tiempo entre origen y destino",)
-def RealizarCalculosEstimados(origen_latitud: float,origen_longitud: float,destino_latitud: float,destino_longitud: float,
-    request: Request, tipo_vehiculo: VehiculosSoportados | None = None):
+def RealizarCalculosEstimados(
+    request: Request,
+    origen_latitud: float = Query(..., ge=-90, le=90),
+    origen_longitud: float = Query(..., ge=-180, le=180),
+    destino_latitud: float = Query(..., ge=-90, le=90),
+    destino_longitud: float = Query(..., ge=-180, le=180),
+    tipo_vehiculo: VehiculosSoportados | None = None,
+):
     query = QueryEstimacionRuta(origen_latitud=origen_latitud,
                                 origen_longitud=origen_longitud,
                                 destino_latitud=destino_latitud,
@@ -130,7 +136,7 @@ async def RealizarReserva(conductor_id: UUID,datos: CambioReservaTemporal,respon
     guardar_respuesta_idempotente(idempotency_key,bhash,response.status_code,body_dict=bodyJson,)
     return resultado
 
-@ruta4.get("conductores/cercanos", response_model=ResultadoBusquedaConductores,
+@ruta4.get("/conductores/cercanos", response_model=ResultadoBusquedaConductores,
         dependencies=[Depends(verificar_roles("solicitud-be", "ubicacion-be")),
         Depends(verificar_rate_limit("buscar_conductores_cercanos"))],
         status_code=200,
@@ -146,7 +152,7 @@ def BuscarConductoresCercanos(request:Request,response:Response,origen_latitud:f
     resultado = CandidatosCercanos.buscar(query,trace_id=request.state.request_id)
     return resultado
 
-@ruta4.put("conductores/{conductor_id}/estado-operativo",response_model=EstadoOperativoRegistrado,
+@ruta4.put("/conductores/{conductor_id}/estado-operativo",response_model=EstadoOperativoRegistrado,
         dependencies=[Depends(verificar_roles("conductores-be", "ubicacion-be")),
         Depends(verificar_rate_limit("buscar_conductores_cercanos"))])
 def actualizarEstadoOperativo(request: Request,response: Response,conductor_id: UUID,body: EstadoOperativo):
@@ -154,7 +160,7 @@ def actualizarEstadoOperativo(request: Request,response: Response,conductor_id: 
     response.status_code = status.HTTP_201_CREATED if es_nuevo else status.HTTP_200_OK
     return resultado
 
-@ruta5.get("live", status_code=200)
+@ruta5.get("/live", status_code=200)
 def consultar_liveness():
     """
     LIVENESS:
@@ -163,7 +169,7 @@ def consultar_liveness():
     """
     return {"status": "UP"}
 
-@ruta5.get("ready", status_code=200)
+@ruta5.get("/ready", status_code=200)
 def consultar_readiness():
     """
     READINESS:

@@ -5,14 +5,12 @@ from uuid import UUID
 from app.db.cache_config import cache
 from datetime import datetime
 from enum import Enum
+from app.esquemas.esquemas import Coordenada
 
 class EstadoTmp(str,Enum):
     RESERVADO="RESERVADO"
     LIBERADO="LIBERADO"
 
-class Coordenada(BaseModel):
-    latitud: float = Field(..., ge=-90.0, le=90.0, description="Latitud en grados decimales")
-    longitud: float = Field(..., ge=-180.0, le=180.0, description="Longitud en grados decimales")
 #lo de abajo no es necesario y tal vez no es correcto modelar
 # --- PARCHES TEMPORALES (Simulando lo que falta importar/crear) ---
 class EstadoConductor(str, Enum):

@@ -35,7 +35,7 @@ def validar_token_keycloak(credenciales: HTTPAuthorizationCredentials | None = D
         raise NoAutenticado(detail="Certificado de acceso expirado.") from e # 401
     except jwt.PyJWTError as e:
         logger.warning("Token JWT inválido o corrupto|Tipo: %s|Detalle %s", type(e).__name__,e)
-        raise NoAutenticado(detail="Certificado de acceso inválido o corrupto") from {e}  # 401
+        raise NoAutenticado(detail="Certificado de acceso inválido o corrupto") from e  # 401
 
 
 def verificar_roles(*roles_permitidos: str):

@@ -15,6 +15,10 @@ from sqlalchemy.orm import sessionmaker
 
 #Capturamos la URL que inyectó Docker desde el archivo .env
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgresql://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace(
+        "postgresql://", "postgresql+psycopg2://", 1
+    )
 
 #Creamos el motor (engine) que establece el canal de comunicación con Postgres
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
