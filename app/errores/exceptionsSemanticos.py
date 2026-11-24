@@ -129,3 +129,27 @@ class ErrorHealthCheck(ProblemaDominio):
             status = 503,
             detail = detail,
             code = "HEALTH_CHECK_FALLO")
+class RecursoNoDisponible(ProblemaDominio):
+    def __init__(self,detail:str="El Recurso Que Intenta Acceder No Existe.",title:str="No Encontrado",code:str="RECURSO_NO_DISPONIBLE"):
+        super().__init__(
+            type = "/errores/recursonodisponible/",
+            title = title,
+            status = 404,
+            detail = detail,
+            code = code)
+
+class ErrorConflicto(ProblemaDominio):
+    def __init__(self,detail:str="Conflicto debido a solicitud no coherente",title:str="Conflicto de solicitud",code:str="CONFLICTO"):
+        super().__init__(
+            type = "/errores/conflicto/",
+            title = title,
+            status = 409,
+            detail = detail,
+            code = code)
+
+class RespuestaIdempotenteLista(Exception):
+    """Corte de flujo controlado cuando ya existe una respuesta idempotente válida en caché."""
+    def __init__(self, status_code: int, payload: dict[str, Any]):
+        self.status_code = status_code
+        self.payload = payload
+        super().__init__(f"Respuesta idempotente lista con status={status_code}")
