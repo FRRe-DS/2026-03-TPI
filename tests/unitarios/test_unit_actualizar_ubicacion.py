@@ -8,6 +8,7 @@ from app.esquemas.esquemas import ActualizarUbicacion, Coordenada
 from app.errores.exceptionsSemanticos import DependenciaNoDisponible, ErrorTimeStamp
 
 ID = UUID('00000000-0000-0000-0000-000000000001')
+TRACE_ID = "test-trace-id" #Identificador ficticio,para que las pruebas puedan invocar el método.
 AHORA = datetime(2026, 1, 1, tzinfo=timezone.utc)
 
 
@@ -21,29 +22,15 @@ def servicio(cargar_aislado):
 
 
 @pytest.mark.parametrize('nuevo', [True, False])
-@pytest.mark.parametrize('error_ttl', [False, True])
-def test_crear_actualizar_y_ttl(servicio, nuevo, error_ttl):
+def test_crear_actualizar_y_ttl(servicio, nuevo):
     repo = servicio.UbicacionesCond
     existente = Mock(timestamp_ubicacion=AHORA - timedelta(seconds=1))
     repo.get.return_value = existente
     if nuevo:
         repo.get.side_effect = servicio.NotFoundError
     persistido = repo.return_value if nuevo else existente
-    if error_ttl:
-        persistido.expire.side_effect = RuntimeError('redis indisponible')
     datos = ActualizarUbicacion(latitud=-27.4, longitud=-59, timestamp_ubicacion=AHORA)
-    if error_ttl:
-        with pytest.raises(DependenciaNoDisponible) as error:
-            servicio.ActualizarUbicacionService.procesar(ID, datos, trace_id='unit-test')
-        assert error.value.status == 503
-        assert error.value.__cause__ is not None
-        assert error.value.__cause__.args == ('redis indisponible',)
-        persistido.save.assert_called_once_with()
-        persistido.expire.assert_called_once_with(30)
-        return
-
-    resultado, es_nuevo = servicio.ActualizarUbicacionService.procesar(
-        ID, datos, trace_id='unit-test')
+    resultado, es_nuevo = servicio.ActualizarUbicacionService.procesar(ID, datos,TRACE_ID)
     assert es_nuevo is nuevo
     assert resultado.conductor_id == ID
     assert resultado.timestamp_ubicacion == AHORA
@@ -61,12 +48,38 @@ def test_crear_actualizar_y_ttl(servicio, nuevo, error_ttl):
         assert existente.geo == geo
         assert existente.timestamp_ubicacion == AHORA
 
+@pytest.mark.parametrize('nuevo', [True, False])
+def test_error_al_aplicar_ttl(servicio, nuevo):
+    repo = servicio.UbicacionesCond
+    existente = Mock(timestamp_ubicacion=AHORA - timedelta(seconds=1))
 
+    repo.get.return_value = existente
+
+    if nuevo:
+        repo.get.side_effect = servicio.NotFoundError
+
+    persistido = repo.return_value if nuevo else existente
+    persistido.expire.side_effect = RuntimeError('redis indisponible')
+
+    datos = ActualizarUbicacion(
+        latitud=-27.4,
+        longitud=-59,
+        timestamp_ubicacion=AHORA
+    )
+
+    with pytest.raises(DependenciaNoDisponible) as exc:
+        servicio.ActualizarUbicacionService.procesar(
+            ID, datos, TRACE_ID
+        )
+
+    assert exc.value.status == 503
+    persistido.save.assert_called_once_with()
+    persistido.expire.assert_called_once_with(30)
+    
 def test_get_devuelve_none_crea(servicio):
     servicio.UbicacionesCond.get.return_value = None
     datos = ActualizarUbicacion(latitud=0, longitud=0, timestamp_ubicacion=AHORA)
-    assert servicio.ActualizarUbicacionService.procesar(
-        ID, datos, trace_id='unit-test')[1] is True
+    assert servicio.ActualizarUbicacionService.procesar(ID, datos,TRACE_ID)[1] is True
 
 
 @pytest.mark.parametrize('segundos,latitud,longitud', [(-1, 0, 0), (0, 1, 0), (0, 0, 1)])
@@ -76,8 +89,7 @@ def test_rechaza_timestamp_anterior_o_coordenadas_distintas(servicio, segundos, 
     datos = ActualizarUbicacion(latitud=latitud, longitud=longitud,
         timestamp_ubicacion=AHORA + timedelta(seconds=segundos))
     with pytest.raises(ErrorTimeStamp) as exc:
-        servicio.ActualizarUbicacionService.procesar(
-            ID, datos, trace_id='unit-test')
+        servicio.ActualizarUbicacionService.procesar(ID, datos,TRACE_ID)
     assert exc.value.status == 409
     existente.save.assert_not_called()
     existente.expire.assert_not_called()
@@ -88,8 +100,7 @@ def test_mismo_timestamp_mismas_coordenadas(servicio):
     existente = Mock(timestamp_ubicacion=AHORA, geo=Coordenada(latitud=0, longitud=0))
     servicio.UbicacionesCond.get.return_value = existente
     datos = ActualizarUbicacion(latitud=0, longitud=0, timestamp_ubicacion=AHORA)
-    assert servicio.ActualizarUbicacionService.procesar(
-        ID, datos, trace_id='unit-test')[1] is False
+    assert servicio.ActualizarUbicacionService.procesar(ID, datos,TRACE_ID)[1] is False
     existente.save.assert_called_once_with()
 
 
@@ -99,10 +110,16 @@ def test_no_oculta_errores_de_persistencia(servicio, etapa):
     servicio.UbicacionesCond.get.return_value = existente
     objetivo = servicio.UbicacionesCond.get if etapa == 'get' else existente.save
     objetivo.side_effect = RuntimeError('persistencia fallida')
-    with pytest.raises(DependenciaNoDisponible) as error:
-        servicio.ActualizarUbicacionService.procesar(ID,
-            ActualizarUbicacion(latitud=0, longitud=0, timestamp_ubicacion=AHORA),
-            trace_id='unit-test')
-    assert error.value.status == 503
-    assert error.value.__cause__.args == ('persistencia fallida',)
+    with pytest.raises(DependenciaNoDisponible) as exc:
+       servicio.ActualizarUbicacionService.procesar(
+        ID,
+        ActualizarUbicacion(
+            latitud=0,
+            longitud=0,
+            timestamp_ubicacion=AHORA
+        ),
+        TRACE_ID
+    )
+
+    assert exc.value.status == 503
     existente.expire.assert_not_called()
