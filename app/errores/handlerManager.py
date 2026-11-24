@@ -84,7 +84,14 @@ def registrar_manejadores_excepciones(app: FastAPI):
             status_code=exc.status,
             headers=head,
             content=contenido)
-
+        
+    @app.exception_handler(RespuestaIdempotenteLista)
+    async def _handler_respuesta_idempotente(request: Request, exc: RespuestaIdempotenteLista):
+        trace_id = getattr(request.state, "request_id")
+        logger.debug("[trace_id=%s]|Devolviendo respuesta idempotente cacheada|status=%s|path=%s",
+            trace_id,exc.status_code,request.url.path,)
+        return JSONResponse(status_code=exc.status_code, content=exc.payload)
+        
     @app.exception_handler(Exception)  # Captura cualquier error no controlado en la app
     async def global_exception_handler(request: Request, exc: Exception):
         trace_id = getattr(request.state, "request_id", None)
