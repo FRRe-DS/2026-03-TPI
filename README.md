@@ -36,5 +36,17 @@ M3, M5, mapas
         * httpx: Soporte para eventos asincronicos en caso de ser necesario
         * Uvicorn: Soporte asincronico de ASGI web server, cual permite ejecucion sobre el codigo en la api
         * Pydantic-Settings: Dependencia de mapeo sobre datos de los entornos, abstrae datos y aumenta seguridad.
+        * Redis_om: Dependencia para cache dedicado.
         * Base de datos utlizada: PostgreSQL 15-alphine debido a sus bajos requerimientos de hardware.
 * **Control de Versiones:** Git & GitHub
+
+==========================================================================
+## Comandos utiles.
+* docker-compose up -build -d (reconstruye contenedores si se modificaron configuraciones)
+* docker-compose up -d (arranca contenedores docker)
+* docker-compose restart (reinicia contenedores)
+* docker-compose exec api python -m app.seed (utilizado para inicializar la semilla de datos)
+* docker-compose exc api python -m pytest -v (ejecucion de pruebas)
+
+
+
