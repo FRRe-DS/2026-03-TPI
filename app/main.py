@@ -116,7 +116,6 @@ def RealizarCalculosEstimados(origen_latitud: float,origen_longitud: float,desti
 
 #TODO: falta implementar reserva
 #TODO:posiblemente deberia colocar dentro del decorador del endpoint el Depends(verificar_rol("disponibilidad-be")) 
-#TODO:para que se ejecute la verificacion de rol y si no cumple con el rol requerido, se lanza un error y ni entra en el endpoint
 """dependencies=[Depends(verificar_roles("solicitud-be", "ubicacion-be")),Depends(verificar_rate_limit("reservar_conductor")),]"""
 @ruta4.post("conductores/{conductor_id}/reserva",response_model=SolicitudReserva,status_code=201,description="La reserva temporal se creó para esta solicitud.",)
 async def RealizarReserva(datos:SolicitudReserva,idempotency_key: str = Depends(verificar_idempotencia)):

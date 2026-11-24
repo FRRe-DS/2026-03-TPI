@@ -11,7 +11,6 @@ se debe invocar mediante
 lat,long = obtener_coordenadas(direccion)
 
 '''
-#TODO: falta diferenciar el 503 del 504, dependencia no disponible de tiempo agotado
 from geopy.exc import GeocoderTimedOut, GeopyError
 from geopy.geocoders import Nominatim
 import logging, threading, time

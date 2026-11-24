@@ -1,34 +1,41 @@
-import hashlib
-from fastapi import Request, Response
+import hashlib,logging
+from fastapi import Request
 from fastapi.responses import JSONResponse
 from app.db.cache_config import cache
+from app.errores.exceptionsSemanticos import DependenciaNoDisponible,FaltaHeaderIdempotencia,HashBodyDiferente
 from app.modelos.cache_models import RegistroIdempotencia
-from app.errores.exceptionsSemanticos import HashBodyDiferente, FaltaHeaderIdempotencia, IdempotenciaCacheEncontrada
-#se supone que para cada "consulta" la idempotency_key es unica, como solo existe una por body, que cambie el 
-#body no tiene sentido
 
-async def verificar_idempotencia(request: Request, response: Response):
-    #Extraer el header obligatorio exigido por el YAML
+logger = logging.getLogger(__name__)
+
+async def verificar_idempotencia(request: Request):
+    trace_id = getattr(request.state, "request_id", None)
+    # Extraer el header obligatorio exigido por el contrato
     idempotency_key = request.headers.get("idempotencyKey")
     if not idempotency_key:
-        #TODO: aqui posiblemente falte realizar el registro de logger
+        logger.warning("[trace_id=%s]|Falta header idempotencyKey en la solicitud",trace_id,)
         raise FaltaHeaderIdempotencia()
-    #Calcular el hash SHA-256 del Body actual (policía anti-fraude)
+
+    # Calcular el hash SHA-256 del body actual para detectar reutilización con payload distinto
     body_bytes = await request.body()
     body_hash = hashlib.sha256(body_bytes).hexdigest()
-    #Armar la clave (key) exacta para buscar en Redis
-    coincidencia = f"idempotency:{idempotency_key}"
-    # Consultar en Redis si ya existe el casillero
-    coincidencia_json = cache.get(coincidencia)
-    if coincidencia_json:
-        # Deserializar usando nuestro BaseModel de Pydantic
-        campo = RegistroIdempotencia.model_validate_json(coincidencia_json) 
-        # Validar integridad: misma llave pero datos distintos -> Error 409 Conflict
+    clave = f"idempotency:{idempotency_key}"
+
+    # Consultar y validar el registro en caché dentro de try para mapear fallos de Redis/datos a 503
+    try:
+        coincidencia_json = cache.get(clave)
+        campo = (RegistroIdempotencia.model_validate_json(coincidencia_json) if coincidencia_json else None)
+    except Exception as exc:
+        logger.exception(
+            "[trace_id=%s]|Error al consultar/validar idempotencia en Redis|key=%s|Tipo=%s|Detalle=%s",
+            trace_id,idempotency_key,type(exc).__name__,exc,)
+        raise DependenciaNoDisponible(detail="No se pudo consultar el estado de idempotencia en caché.") from exc
+
+    if campo is not None:
         if campo.body_hash != body_hash:
-            raise HashBodyDiferente() 
-        # Si todo coincide perfectamente, devolvemos la respuesta cacheada (Cumple con el 200 OK del YAML)
-        #TODO: aqui posiblemente falte realizar el registro de logger
-        raise IdempotenciaCacheEncontrada(status_code=campo.status_code, body=campo.body)
-    #Si la llave NO existe, cedemos el control para que se ejecute el endpoint de negocio
+            logger.warning("[trace_id=%s]|Conflicto de hash en idempotencyKey=%s",trace_id,idempotency_key,)
+            raise HashBodyDiferente()
+        logger.info("[trace_id=%s]|Respuesta idempotente recuperada desde caché|key=%s|status=%s",
+            trace_id,idempotency_key,campo.status_code,)
+        return JSONResponse(status_code=campo.status_code, content=campo.body)
+    # Si no existe registro previo, se devuelve la clave para continuar con la ejecución normal
     return idempotency_key
-#se guarda luego de resolver el endpoint, antes de finalizarlo OJO, tambien debe usarse el mismo calculo HASH

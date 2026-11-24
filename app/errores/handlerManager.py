@@ -23,7 +23,7 @@ def registrar_manejadores_excepciones(app: FastAPI):
             content={
                 "type": "about:blank",
                 "title": "No Procesable",
-                "status_code": 422,
+                "status": 422,
                 "detail": "Los datos de entrada no cumplen con el formato requerido. ",
                 "instance": str(request.url.path),
                 "trace_id":trace_id,
@@ -37,7 +37,7 @@ def registrar_manejadores_excepciones(app: FastAPI):
         contenido={
             "type": exc.type,
             "title": exc.title,
-            "status": exc.status_code,
+            "status": exc.status,
             "detail": exc.detail,
             "instance": str(request.url.path),
             "trace_id": trace_id
@@ -54,7 +54,7 @@ def registrar_manejadores_excepciones(app: FastAPI):
             head={"Content-Type": "application/problem+json"}
 
         return JSONResponse(
-                    status_code=exc.status_code,
+                    status_code=exc.status,
                     headers=head,
                     content=contenido)
 
@@ -64,7 +64,7 @@ def registrar_manejadores_excepciones(app: FastAPI):
         contenido={
                     "type": exc.type,
                     "title": exc.title,
-                    "status": exc.status_code,
+                    "status": exc.status,
                     "detail": exc.detail,
                     "instance": str(request.url.path),
                     "trace_id": trace_id
@@ -81,7 +81,7 @@ def registrar_manejadores_excepciones(app: FastAPI):
             head={"Content-Type": "application/problem+json"}
 
         return JSONResponse(
-            status_code=exc.status_code,
+            status_code=exc.status,
             headers=head,
             content=contenido)
 

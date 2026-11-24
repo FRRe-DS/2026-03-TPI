@@ -1,17 +1,18 @@
 from typing import Any
 
 class ProblemaGenerico (Exception):
-    def __init__(self, type: str = "about:blank", title: str = "", status_code: int = None, 
-                detail: str = "", instance: str = "", code: str = None, trace_id: str = None, invalid_params = None,retry_after:int|None=None):
-        if not (400 <= status_code <= 599):
+    def __init__(self, type: str = "about:blank", title: str = "", status: int = None, 
+                detail: str = "", instance: str = "", code: str = None, trace_id: str = None,
+                invalid_params = None,retry_after:int|None=None):
+        if not (400 <= status <= 599) or None:
             raise ValueError(
-                f"El código de estado HTTP '{status_code}' es inválido para un problema. "
+                f"El código de estado HTTP '{status}' es inválido para un problema. "
                 "Debe estar estrictamente entre 400 y 599."
             )
         
         self.type = type
         self.title = title
-        self.status_code = status_code
+        self.status = status
         self.detail = detail
         self.instance = instance
         self.code = code
@@ -21,16 +22,16 @@ class ProblemaGenerico (Exception):
         super().__init__(detail)
 
 class ProblemaDominio (Exception):
-    def __init__(self, type: str = "", title: str = "", status_code: int = None, detail: str = "", instance: str = "", code: str = None, trace_id: str = None, invalid_params = None,retry_after:int|None=None):
-        if not (400 <= status_code <= 599):
+    def __init__(self, type: str = "", title: str = "", status: int = None, detail: str = "", instance: str = "", code: str = None, trace_id: str = None, invalid_params = None,retry_after:int|None=None):
+        if not (400 <= status <= 599) or None:
             raise ValueError(
-                f"El código de estado HTTP '{status_code}' es inválido para un problema. "
+                f"El código de estado HTTP '{status}' es inválido para un problema. "
                 "Debe estar estrictamente entre 400 y 599."
             )
         
         self.type = type
         self.title = title
-        self.status_code = status_code
+        self.status = status
         self.detail = detail
         self.instance = instance
         self.code = code
@@ -43,7 +44,7 @@ class NoAutenticado (ProblemaGenerico):
     def __init__(self, detail:str="Falla en autenticacion o certificados no validos"):
             super().__init__(
                 title = "No Autenticado",
-                status_code = 401,
+                status = 401,
                 detail = detail,
                 code = "NO_AUTENTICADO")
 
@@ -51,7 +52,7 @@ class SinPermiso (ProblemaGenerico):
     def __init__(self, detail:str="El usuario no posee los permisos necesarios para acceder a este recurso"):
         super().__init__(
             title = "Sin Permiso",
-            status_code = 403,
+            status = 403,
             detail = detail,
             code = "SIN_PERMISO")
 
@@ -59,7 +60,7 @@ class LimiteExcedido (ProblemaGenerico): #tiene retry after
     def __init__(self, detail:str="Se ha excedido en cantidad de consultas, intente en mas tarde.",retry_after:int|None=None):
         super().__init__(
             title = "Limite Excedido",
-            status_code = 429,
+            status = 429,
             detail = detail,
             retry_after=retry_after,
             code = "LIMITE_EXCEDIDO")
@@ -69,7 +70,7 @@ class TiempoAgotado (ProblemaDominio): #TODO: tiene retry after y se implementa 
         super().__init__(
             type ="/errores/tiempoagotado/",
             title = "Tiempo Agotado",
-            status_code = 504,
+            status = 504,
             detail = detail,
             retry_after=retry_after,
             code = "TIEMPO_AGOTADO")
@@ -79,16 +80,16 @@ class DependenciaNoDisponible(ProblemaDominio):
         super().__init__(
             type = "/errores/dependencianodisponible/",
             title = "Dependencia No Disponible",
-            status_code = 503,
+            status = 503,
             detail = detail,
             retry_after=retry_after,
-            code = "GEOCODIFICACION_FRACASO")
+            code = "DEPENDENCIA_NO_DISPONIBLE")
 
 class FaltaHeaderIdempotencia(ProblemaGenerico):
     def __init__(self,detail:str ="Peticion incompleta, header 'idempotencyKey' es obligatoria para procesar esta operación."):
         super().__init__(
         title="Solicitud Invalida",
-        status_code=400,
+        status=400,
         detail=detail,
         code="HEADER_IDEMPOTENCIA_FALTANTE"
         )
@@ -98,7 +99,7 @@ class HashBodyDiferente(ProblemaDominio):
         super().__init__(
             type = "/errores/conflictohash/",
             title = "Conflicto",
-            status_code = 409,
+            status = 409,
             detail = detail,
             code = "IDEMPOTENCIA_CONFLICTO"
         )
@@ -107,7 +108,7 @@ class ErrorTimeStamp(ProblemaGenerico):
     def __init__(self, detail:str="Timestamp anterior a la ubicación vigente, o mismo timestamp con datos distintos/iguales."):
         super().__init__(
             title = "Conflicto",
-            status_code = 409,
+            status = 409,
             detail = detail,
             code = "CONFLICTO_TIMESTAMP")
 
@@ -116,26 +117,15 @@ class ErrorEvento_id(ProblemaGenerico):
     def __init__(self, detail:str="Evento duplicado para la operacion."):
         super().__init__(
             title = "Conflicto",
-            status_code = 409,
+            status = 409,
             detail = detail,
-            code = "CONFLICTO_TIMESTAMP")
+            code = "CONFLICTO_EVENTO_ID")
 
 class ErrorHealthCheck(ProblemaDominio):
     def __init__(self, detail:str="Fallo en la verificacion de salud del servicio"):
         super().__init__(
             type = "/errores/healthcheck/",
             title = "Fallo en Health Check",
-            status_code = 503,
+            status = 503,
             detail = detail,
-            code = "HEALTH_CHECK_FALLO"
-        )
-
-class IdempotenciaCacheEncontrada(ProblemaGenerico):
-    def __init__(self, status_code:int, body:Any):
-        super().__init__(
-            title = "Idempotencia Encontrada",
-            status_code = status_code,
-            detail = "La solicitud ya fue procesada previamente y se devolvio una respuesta cacheada.",
-            code = "IDEMPOTENCIA_ENCONTRADA"
-        )
-        self.body = body
+            code = "HEALTH_CHECK_FALLO")
