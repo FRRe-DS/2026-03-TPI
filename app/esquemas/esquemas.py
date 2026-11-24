@@ -104,12 +104,20 @@ class ResultadoEstimacionRuta(BaseModel):
     calculado_en: datetime = Field(..., description="Timestamp UTC del momento del cálculo")
     fuente: FuenteInfo = Field(..., description="proveedor_mapa o estimacion_local")
 
-class SolicitudReserva(BaseModel):
+class CambioReservaTemporal(BaseModel):
     model_config = ConfigDict(extra="forbid") #debido a que el contrato las propiedades adicionales es false
-    reserva_id: UUID = Field(..., description="ID temporal de la reserva simulada")
-    conductor_id: UUID = Field(..., description="ID del conductor reservado")
-    estado: EstadoTmp = Field(default=EstadoTmp.RESERVADO, description="Estado de la reserva")
+    solicitud_id: UUID = Field(..., description="Identificador único de la solicitud de viaje")
+    estado_temporal: EstadoTmp = Field(..., description="RESERVADO o LIBERADO")
 
+class ResultadoReservaTemporal(BaseModel):
+    model_config = ConfigDict(extra="forbid") #debido a que el contrato las propiedades adicionales es false
+    conductor_id: UUID = Field(..., description="ID del conductor")
+    solicitud_id: UUID = Field(..., description="ID de la solicitud")
+    estado_temporal: EstadoTmp = Field(..., description="Estado resultante de la reserva")
+    actualizado_en: datetime = Field(..., description="Momento de actualización en formato UTC")
+    expira_en: Optional[datetime] = Field(default=None, description="Fecha de expiración si está RESERVADO (10 min)")
+    idempotente: Optional[bool] = Field(default=False, description="Indica si la solicitud ya había sido aplicada antes")
+    
 class QueryCercanos(BaseModel):
     model_config = ConfigDict(extra="forbid") #debido a que el contrato las propiedades adicionales es false
     origen_latitud: float = Field(...,ge=-90,le=90)
