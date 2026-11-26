@@ -18,3 +18,8 @@ mis-notas-rocio/
 app/logs/*.log
 *.log
 .env
+
+# Frontend (simulador)
+node_modules/
+*.tsbuildinfo
+dist/

@@ -1,0 +1,29 @@
+{
+  "name": "simulador-m4",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "gen:types": "openapi-typescript ../openapi.yml -o src/api/generated/schema.ts",
+    "mock": "prism mock ../openapi.yml -p 4010"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-leaflet": "^5.0.0",
+    "uuid": "^14.0.3"
+  },
+  "devDependencies": {
+    "@stoplight/prism-cli": "^5.16.0",
+    "@types/leaflet": "^1.9.23",
+    "@types/react": "^19.3.3",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.4.0"
+  }
+}
