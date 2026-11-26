@@ -1,14 +1,12 @@
 #TODO: para los test unitarios o de integracion parcial, hacer mock del consumo M3.
 #TODO: para los test de integracion docker, tener en cuenta las direcciones internas del contenedor en el entorno, asi como las url,realms,networks, nombres de contenedores.
-#TODO:verificar que los raise no aborten operacion.
-#TODO:verificar/corregir/actualizar seccion de reservas
 from datetime import datetime, timezone
 from typing import List
 from uuid import UUID
 from geopy.distance import geodesic
 import logging, httpx, os, time
 from app.modelos.cache_models import UbicacionesCond, CacheEstOp, CacheResTemp
-from app.esquemas.esquemas import QueryCercanos, ResultadoBusquedaConductores, Candidatos, VehiculosSoportados
+from app.esquemas.esquemas import QueryCercanos, ResultadoBusquedaConductores, Candidatos, VehiculosSoportados, EstadoTmp
 from app.errores.exceptionsSemanticos import DependenciaNoDisponible
 from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutError as RedisTimeoutError
 from redis_om.model.model import NotFoundError
@@ -183,36 +181,30 @@ class CandidatosCercanos:
                             logger.debug("[trace_id=%s]|Candidato encontrado pero no cumple la regla de negocio de disponibilidad|conductor_id=%s",
                                 trace_id,conductor_id,)
                             continue
+                    #TODO:considerar que se puede consultar luego su estado operativo asi que esto estara de mas poner continue abajo
                     except NotFoundError:
                         logger.debug("[trace_id=%s]|Sin registro en CacheEstOp, se descarta candidato|conductor_id=%s",
                             trace_id,conductor_id,)
-                        continue
                     except (RedisConnectionError, RedisTimeoutError) as e:
-                        logger.exception("[trace_id=%s]|Error de redis|Tipo= %s|Detalle= %s",
-                            trace_id,type(e).__name__,e,)
-                        #TODO: posiblemente hay que quitar porque aborta operacion
-                        raise DependenciaNoDisponible(detail="No se pudo acceder a el estado operativo del conductor (Redis no disponible).",
-                            retry_after=1,) from e
+                        logger.exception("[trace_id=%s]|Error de redis|Tipo= %s|Detalle= %s",trace_id,type(e).__name__,e,)
+                        continue
                     except Exception as e:
                         logger.exception("[trace_id=%s]|Error inesperado de datos|Tipo= %s|Detalle= %s",
                             trace_id,type(e).__name__,e,)
                         continue
-                    #TODO: ojo aca, el cache de reserva cambio, hay que revisar este apartado para que sea verosimil
                     try:
                         reserva = CacheResTemp.get(str(conductor_id))
-                        if reserva and reserva.estado_temporal == "RESERVADO":
+                        if reserva and reserva.estado_temporal == EstadoTmp.RESERVADO:
                             logger.debug("[trace_id=%s]|Estado temporal %s impide candidatura|Conductor id =%s",
                                 trace_id,reserva.estado_temporal,conductor_id,)
                             continue
                     except NotFoundError:
-                        logger.debug("[trace_id=%s]|Sin reserva temporal activa para conductor|conductor_id=%s",
+                        logger.debug("[trace_id=%s]|Sin reserva temporal activa para conductor,esta libre|conductor_id=%s",
                             trace_id,conductor_id,)
                     except (RedisConnectionError, RedisTimeoutError) as e:
                         logger.exception("[trace_id=%s]|No se pudo acceder a registro de reservas|Tipo= %s|Detalle= %s",
                             trace_id,type(e).__name__,e,)
-                        #TODO: posiblemente hay que quitar porque aborta operacion
-                        raise DependenciaNoDisponible(detail="No se pudo acceder a el registro de reservas(Redis no disponible).",
-                            retry_after=1,) from e
+                        continue
                     except Exception as e:
                         logger.exception("[trace_id=%s]|No se pudo acceder a registro de reservas|Tipo= %s|Detalle= %s",
                             trace_id,type(e).__name__,e,)
