@@ -1,6 +1,8 @@
 from typing import Dict, Any, Optional
+import json
 from pydantic import BaseModel, Field, field_validator
 from redis_om import HashModel
+from redis.client import Pipeline
 from uuid import UUID
 from app.db.cache_config import cache
 from datetime import datetime
@@ -54,6 +56,21 @@ class UbicacionesCond(HashModel):#usa ttl
     conductor_id: UUID = Field(...,primary_key=True,description="id del conductor que reporta la ubicacion")
     geo:Coordenada = Field(...)
     timestamp_ubicacion: datetime =Field(...)
+
+    @field_validator("geo", mode="before")
+    @classmethod
+    def decodificar_geo(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return json.loads(value)
+        return value
+
+    def save(self, pipeline: Optional[Pipeline] = None) -> "UbicacionesCond":
+        document = self.model_dump(mode="json")
+        document["geo"] = json.dumps(document["geo"])
+        document = {key: value for key, value in document.items() if value is not None}
+        self._get_db(pipeline).hset(self.key(), mapping=document)
+        return self
+
     class Meta:
         database = cache
 
@@ -63,6 +80,17 @@ class CacheEstOp(HashModel):
     connected:bool = Field(...,description="si es true el conductor desea esta conectado a la app")
     available:bool = Field(...,description="si es true el conductor desea recibir solicitudes")
     timestamp_evento: Optional[datetime] = Field(default=None, description="Opcional hasta confirmación de M3. Si se informa, instante UTC de la intención que M4 usa para detectar eventos fuera de orden.")
+
+    def save(self, pipeline: Optional[Pipeline] = None) -> "CacheEstOp":
+        document = self.model_dump(mode="json")
+        document = {
+            key: str(value) if isinstance(value, bool) else value
+            for key, value in document.items()
+            if value is not None
+        }
+        self._get_db(pipeline).hset(self.key(), mapping=document)
+        return self
+
     class Meta:
             database = cache
 

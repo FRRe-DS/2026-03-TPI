@@ -141,7 +141,14 @@ async def RealizarReserva(conductor_id: UUID,datos: CambioReservaTemporal,respon
         Depends(verificar_rate_limit("buscar_conductores_cercanos"))],
         status_code=200,
         description="Búsqueda realizada; conductores puede ser lista vacía si no hay candidatos en ningún radio.")
-def BuscarConductoresCercanos(request:Request,response:Response,origen_latitud:float,origen_longitud:float,tipo_vehiculo:VehiculosSoportados,limite:int|None = None,):
+def BuscarConductoresCercanos(
+    request: Request,
+    response: Response,
+    origen_latitud: float = Query(..., ge=-90, le=90),
+    origen_longitud: float = Query(..., ge=-180, le=180),
+    tipo_vehiculo: VehiculosSoportados = Query(...),
+    limite: int | None = Query(default=20, ge=1, le=100),
+):
     # Contrato exige Cache-Control: no-store (respuesta contiene coordenadas/ubicación)
     response.headers["Cache-Control"] = "no-store"
     query=QueryCercanos(origen_latitud=origen_latitud,
