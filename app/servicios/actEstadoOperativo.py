@@ -78,6 +78,7 @@ class ServicioEstadoOperativo:
             event_id=str(body.event_id) if body.event_id is not None else None,
             connected=body.connected,
             available=available_efectivo,
+            timestamp_evento=body.timestamp_evento,  # lo usa el control de eventos viejos
             actualizado_en=body.timestamp_evento,
             recibido_en=recibido_en,
         )

@@ -28,7 +28,13 @@ class CandidatosCercanos:
     def buscar(query: QueryCercanos,trace_id:str) -> ResultadoBusquedaConductores:
         logger.info("[trace_id=%s]|Inicio de busqueda cercana de candidatos.",trace_id)
         try:
-            todas_ubicaciones = UbicacionesCond.find().all()
+            # find() necesita el modulo de busqueda de Redis; recorrer las claves funciona en redis:7
+            todas_ubicaciones = []
+            for pk in UbicacionesCond.all_pks():
+                try:
+                    todas_ubicaciones.append(UbicacionesCond.get(pk))
+                except NotFoundError:
+                    continue  # vencio entre que se listo y se leyo
         except Exception as e:
             # Redis no disponible → 503, no silenciar el fallo devolviendo lista vacía
             logger.exception("[trace_id=%s]|Error al intentar acceder a la redis|Tipo = %s|Detalle = %s",trace_id,type(e).__name__,e)
@@ -86,6 +92,8 @@ class CandidatosCercanos:
                             logger.debug("[trace_id=%s]|Estado temporal %s permite candidatura|Conductor id =%s",trace_id,reserva.estado_temporal,conductor_id)
                     else:
                         logger.debug("[trace_id=%s]|Estado temporal no existe|Conductor id =%s",trace_id,conductor_id)
+                except NotFoundError:
+                    pass  # sin reserva registrada: puede ser candidato
                 except (RedisConnectionError, RedisTimeoutError) as e:
                     logger.exception("[trace_id=%s]|No se pudo acceder a registro de reservas|Tipo= %s|Detalle= %s",trace_id,type(e).__name__,e)
                     raise DependenciaNoDisponible(detail="No se pudo acceder a el registro de reservas(Redis no disponible).",retry_after=1) from e

@@ -1,5 +1,5 @@
 from typing import Dict, Any, Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, field_serializer
 from redis_om import HashModel
 from uuid import UUID
 from app.db.cache_config import cache
@@ -54,6 +54,15 @@ class UbicacionesCond(HashModel):#usa ttl
     conductor_id: UUID = Field(...,primary_key=True,description="id del conductor que reporta la ubicacion")
     geo:Coordenada = Field(...)
     timestamp_ubicacion: datetime =Field(...)
+    # Redis solo guarda valores simples: la coordenada se guarda como texto
+    @field_validator("geo", mode="before")
+    @classmethod
+    def _leer_geo(cls, v):
+        return Coordenada.model_validate_json(v) if isinstance(v, str) else v
+
+    @field_serializer("geo")
+    def _guardar_geo(self, v: Coordenada) -> str:
+        return v.model_dump_json()
     class Meta:
         database = cache
 
@@ -63,6 +72,10 @@ class CacheEstOp(HashModel):
     connected:bool = Field(...,description="si es true el conductor desea esta conectado a la app")
     available:bool = Field(...,description="si es true el conductor desea recibir solicitudes")
     timestamp_evento: Optional[datetime] = Field(default=None, description="Opcional hasta confirmación de M3. Si se informa, instante UTC de la intención que M4 usa para detectar eventos fuera de orden.")
+    # Redis no acepta True/False: se guardan como 1/0 y al leer vuelven a ser bool
+    @field_serializer("connected", "available")
+    def _guardar_bool(self, v: bool) -> int:
+        return int(v)
     class Meta:
             database = cache
 
