@@ -18,3 +18,4 @@ mis-notas-rocio/
 app/logs/*.log
 *.log
 .env
+*.diff
