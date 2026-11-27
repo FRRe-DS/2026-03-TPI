@@ -1,8 +1,6 @@
 from typing import Dict, Any, Optional
-import json
 from pydantic import BaseModel, Field, field_validator, field_serializer
 from redis_om import HashModel
-from redis.client import Pipeline
 from uuid import UUID
 from app.db.cache_config import cache
 from datetime import datetime
