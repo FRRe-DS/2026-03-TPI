@@ -141,7 +141,13 @@ class CandidatosCercanos:
     def buscar(query: QueryCercanos,trace_id:str) -> ResultadoBusquedaConductores:
         logger.info("[trace_id=%s]|Inicio de busqueda cercana de candidatos.",trace_id)
         try:
-            pks = UbicacionesCond.all_pks()
+            # find() necesita el modulo de busqueda de Redis; recorrer las claves funciona en redis:7
+            todas_ubicaciones = []
+            for pk in UbicacionesCond.all_pks():
+                try:
+                    todas_ubicaciones.append(UbicacionesCond.get(pk))
+                except NotFoundError:
+                    continue  # vencio entre que se listo y se leyo
         except Exception as e:
             logger.exception("[trace_id=%s]|Error al listar ubicaciones en Redis|Tipo = %s|Detalle = %s",
                 trace_id,type(e).__name__,e,)
