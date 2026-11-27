@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
 import json
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, field_serializer
 from redis_om import HashModel
 from redis.client import Pipeline
 from uuid import UUID
@@ -59,17 +59,12 @@ class UbicacionesCond(HashModel):#usa ttl
 
     @field_validator("geo", mode="before")
     @classmethod
-    def decodificar_geo(cls, value: Any) -> Any:
-        if isinstance(value, str):
-            return json.loads(value)
-        return value
-
-    def save(self, pipeline: Optional[Pipeline] = None) -> "UbicacionesCond":
-        document = self.model_dump(mode="json")
-        document["geo"] = json.dumps(document["geo"])
-        document = {key: value for key, value in document.items() if value is not None}
-        self._get_db(pipeline).hset(self.key(), mapping=document)
-        return self
+    def _leer_geo(cls, v):
+            return Coordenada.model_validate_json(v) if isinstance(v, str) else v
+            
+    @field_serializer("geo")
+    def _guardar_geo(self, v: Coordenada) -> str:
+        return v.model_dump_json()
 
     class Meta:
         database = cache
@@ -81,15 +76,9 @@ class CacheEstOp(HashModel):
     available:bool = Field(...,description="si es true el conductor desea recibir solicitudes")
     timestamp_evento: Optional[datetime] = Field(default=None, description="Opcional hasta confirmación de M3. Si se informa, instante UTC de la intención que M4 usa para detectar eventos fuera de orden.")
 
-    def save(self, pipeline: Optional[Pipeline] = None) -> "CacheEstOp":
-        document = self.model_dump(mode="json")
-        document = {
-            key: str(value) if isinstance(value, bool) else value
-            for key, value in document.items()
-            if value is not None
-        }
-        self._get_db(pipeline).hset(self.key(), mapping=document)
-        return self
+    @field_serializer("connected", "available")
+    def _guardar_bool(self, v: bool) -> int:
+        return int(v)
 
     class Meta:
             database = cache

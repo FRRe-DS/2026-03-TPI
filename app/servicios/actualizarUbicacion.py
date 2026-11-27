@@ -1,6 +1,6 @@
 from uuid import UUID
 from datetime import datetime, timezone, timedelta
-from redis_om.model import NotFoundError
+from redis_om import NotFoundError
 from app.modelos.cache_models import UbicacionesCond  
 from app.esquemas.esquemas import ActualizarUbicacion, UbicacionRegistrada, Coordenada 
 from app.errores.exceptionsSemanticos import ErrorTimeStamp,DependenciaNoDisponible
