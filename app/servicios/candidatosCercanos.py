@@ -141,19 +141,12 @@ class CandidatosCercanos:
     def buscar(query: QueryCercanos,trace_id:str) -> ResultadoBusquedaConductores:
         logger.info("[trace_id=%s]|Inicio de busqueda cercana de candidatos.",trace_id)
         try:
-            # find() necesita el modulo de busqueda de Redis; recorrer las claves funciona en redis:7
-            todas_ubicaciones = []
-            for pk in UbicacionesCond.all_pks():
-                try:
-                    todas_ubicaciones.append(UbicacionesCond.get(pk))
-                except NotFoundError:
-                    continue  # vencio entre que se listo y se leyo
+            pks = UbicacionesCond.all_pks()
         except Exception as e:
-            logger.exception("[trace_id=%s]|Error al listar ubicaciones en Redis|Tipo = %s|Detalle = %s",
-                trace_id,type(e).__name__,e,)
+            logger.exception("[trace_id=%s]|Error al listar ubicaciones en Redis|Tipo = %s|Detalle = %s",trace_id,type(e).__name__,e,)
             raise DependenciaNoDisponible(detail="No se pudo acceder al almacén de ubicaciones (Redis). Intente nuevamente en unos instantes."
             ,retry_after=1) from e
-
+        
         todas_ubicaciones = []
         for pk in pks:
             try:
@@ -161,17 +154,17 @@ class CandidatosCercanos:
             except NotFoundError:
                 logger.debug("[trace_id=%s]|La ubicacion expiro entre all_pks() y get(pk), se omite el registro|pk=%s",
                     trace_id,pk,)
+                continue
             except (RedisConnectionError, RedisTimeoutError) as e:
                 logger.exception("[trace_id=%s]|Error de Redis al recuperar ubicacion|Tipo=%s|Detalle=%s",
                     trace_id,type(e).__name__,e,)
-                raise DependenciaNoDisponible(
-                    detail="No se pudo acceder al almacén de ubicaciones (Redis). Intente nuevamente en unos instantes.",
-                    retry_after=1,
-                ) from e
+                raise DependenciaNoDisponible(detail="No se pudo acceder al almacén de ubicaciones (Redis). Intente nuevamente en unos instantes.",
+                    retry_after=1,) from e
             except Exception as e:
                 logger.warning("[trace_id=%s]|No se pudo recuperar una ubicacion, se omite el registro|pk=%s|Tipo=%s|Detalle=%s",
                     trace_id,pk,type(e).__name__,e,)
-
+                continue
+        
         candidatos_finales: List[Candidatos] = []
         # radio_aplicado por defecto al máximo (si no hay candidatos en ningún radio)
         radio_aplicado = RADIOS_PROGRESIVOS[-1]

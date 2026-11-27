@@ -46,7 +46,7 @@ M3, M5, mapas
 * docker-compose up -d (arranca contenedores docker)
 * docker-compose restart (reinicia contenedores)
 * docker-compose exec api python -m app.seed (utilizado para inicializar la semilla de datos)
-* docker-compose exc api python -m pytest -v (ejecucion de pruebas)
+* docker-compose exec api python -m pytest -v (ejecucion de pruebas)
 
 
 
