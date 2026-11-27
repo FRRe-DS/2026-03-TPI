@@ -9,13 +9,231 @@ body {
 }
 
 .app {
-  max-width: 60rem;
+  max-width: 72rem;
   margin: 0 auto;
   padding: 2rem 1.5rem;
+}
+
+header h1 {
+  margin-bottom: 0.25rem;
+}
+
+.etapa {
+  margin-top: 0;
+  color: rgba(127, 127, 127, 0.95);
 }
 
 code {
   background: rgba(127, 127, 127, 0.18);
   padding: 0.1em 0.35em;
   border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* --- Paneles --- */
+
+.panel {
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1.25rem 0;
+}
+
+.panel h2 {
+  margin-top: 0;
+}
+
+.panel-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.panel-cabecera h2 {
+  margin-top: 0;
+}
+
+.nota {
+  color: rgba(127, 127, 127, 0.95);
+  font-size: 0.85rem;
+}
+
+.aviso {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #d29922;
+}
+
+.meta {
+  color: rgba(127, 127, 127, 0.95);
+  font-size: 0.85rem;
+}
+
+/* --- Campos de formulario --- */
+
+.campo {
+  margin: 0.75rem 0;
+}
+
+.campo label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.campo input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgba(127, 127, 127, 0.5);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.campo input:focus {
+  outline: 2px solid rgba(127, 127, 127, 0.55);
+  outline-offset: 1px;
+}
+
+/* --- Botones --- */
+
+button {
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid rgba(127, 127, 127, 0.5);
+  background: rgba(127, 127, 127, 0.15);
+  color: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: rgba(127, 127, 127, 0.3);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* --- Badges de status --- */
+
+.badge {
+  display: inline-block;
+  padding: 0.1em 0.55em;
+  border-radius: 999px;
+  font-size: 0.85em;
+  font-weight: 700;
+}
+
+.badge-ok {
+  background: rgba(46, 160, 67, 0.3);
+}
+
+.badge-error {
+  background: rgba(248, 81, 73, 0.35);
+}
+
+.badge-info {
+  background: rgba(127, 127, 127, 0.3);
+}
+
+/* --- Panel de salud --- */
+
+.salud-fila {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1rem;
+}
+
+.salud-item {
+  border-top: 1px solid rgba(127, 127, 127, 0.3);
+  padding-top: 0.5rem;
+}
+
+.salud-item h3 {
+  margin-top: 0.25rem;
+  font-size: 1rem;
+}
+
+.resultado {
+  margin-top: 0.5rem;
+}
+
+.resultado p {
+  margin: 0.25rem 0;
+}
+
+/* --- Problema (problem+json) --- */
+
+.problema {
+  background: rgba(248, 81, 73, 0.08);
+  border-left: 3px solid rgba(248, 81, 73, 0.6);
+  padding: 0.5rem 0.75rem;
+  margin: 0.5rem 0;
+  border-radius: 0 6px 6px 0;
+}
+
+.problema p {
+  margin: 0.25rem 0;
+}
+
+.problema .codigo {
+  background: rgba(248, 81, 73, 0.2);
+}
+
+.problema pre {
+  overflow: auto;
+  font-size: 0.8rem;
+  margin: 0.5rem 0 0;
+}
+
+.problema details {
+  margin-top: 0.35rem;
+}
+
+.invalid-params {
+  margin: 0.35rem 0;
+  padding-left: 1.25rem;
+  font-size: 0.9em;
+}
+
+/* --- Panel de logs --- */
+
+.log-tabla-envoltorio {
+  overflow-x: auto;
+}
+
+.log-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.log-tabla th,
+.log-tabla td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+  vertical-align: top;
+}
+
+.log-tabla th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: rgba(127, 127, 127, 0.95);
+}
+
+.log-tabla td.ruta {
+  white-space: normal;
+  word-break: break-all;
+}
+
+.log-tabla details summary {
+  cursor: pointer;
 }
